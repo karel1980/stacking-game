@@ -160,19 +160,44 @@ class raw_env(AECEnv, EzPickle):
         if self.render_mode != "ansi":
             return None
         from pylos_env.game import LEVEL_OFFSET, LEVEL_SIZE
-        lines = []
+
+        # ANSI color codes
+        RST = "\033[0m"
+        DIM = "\033[2m"
+        BOLD = "\033[1m"
+        RED = "\033[91m"      # player_0 (light)
+        BLUE = "\033[94m"     # player_1 (dark)
+        YELLOW = "\033[93m"
+
+        SYMBOLS = {0: f"{DIM}·{RST}", 1: f"{RED}{BOLD}●{RST}", 2: f"{BLUE}{BOLD}○{RST}"}
+
+        lines = [f"{DIM}{'─' * 30}{RST}"]
         for lv in range(3, -1, -1):
             s = LEVEL_SIZE[lv]
             off = LEVEL_OFFSET[lv]
-            indent = "  " * (3 - lv)
+            # Center each level: max width is level 0 (4 cells, "X   X   X   X" = 13 chars)
+            # Use 4-char spacing between cells for readability
+            pad = "    " * (3 - lv)
+            label = f"{DIM}L{lv}{RST} "
             for r in range(s):
                 row = []
                 for c in range(s):
                     v = self.game.board[off + r * s + c]
-                    row.append(".●○"[v])
-                lines.append(indent + " ".join(row))
-        lines.append(f"Reserves: ●={self.game.reserves[0]} ○={self.game.reserves[1]}")
-        lines.append(f"Phase: {self.game.phase} | Turn: {self.agent_selection}")
+                    row.append(SYMBOLS[v])
+                prefix = label if r == 0 else "   "
+                lines.append(prefix + pad + "   ".join(row))
+            if lv > 0:
+                lines.append("")
+
+        lines.append(f"{DIM}{'─' * 30}{RST}")
+        p0 = self.game.reserves[0]
+        p1 = self.game.reserves[1]
+        lines.append(f"  Reserves: {RED}{BOLD}●{RST} P0={BOLD}{p0}{RST}  {BLUE}{BOLD}○{RST} P1={BOLD}{p1}{RST}")
+        phase_str = f"{YELLOW}{self.game.phase}{RST}" if self.game.phase == "take_back" else self.game.phase
+        turn_color = RED if self.agent_selection == "player_0" else BLUE
+        lines.append(f"  Phase: {phase_str}  Turn: {turn_color}{BOLD}{self.agent_selection}{RST}")
+        lines.append(f"{DIM}{'─' * 30}{RST}")
+
         result = "\n".join(lines)
         print(result)
         return result
