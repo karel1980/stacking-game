@@ -1,6 +1,30 @@
 """Demo: play random Pylos games and display the board."""
 import numpy as np
 from pylos_env import raw_env
+from pylos_env.game import LEVEL_OFFSET, LEVEL_SIZE
+
+
+def _cell_coord(idx: int) -> str:
+    """Map cell index to 'L<level>(<row>,<col>)'."""
+    for lv in range(3, -1, -1):
+        if idx >= LEVEL_OFFSET[lv]:
+            r, c = divmod(idx - LEVEL_OFFSET[lv], LEVEL_SIZE[lv])
+            return f"L{lv}({r},{c})"
+    return f"?{idx}"
+
+
+def describe_action(action: int, agent: str) -> str:
+    """Return a human-readable description of an action."""
+    who = "●" if agent == "player_0" else "○"
+    if action < 30:
+        return f"{who} place at {_cell_coord(action)}"
+    if action < 930:
+        src, dst = divmod(action - 30, 30)
+        return f"{who} raise {_cell_coord(src)} → {_cell_coord(dst)}"
+    if action == 930:
+        return f"{who} pass (end take-back)"
+    pos = action - 931
+    return f"{who} take back from {_cell_coord(pos)}"
 
 
 def play_game(seed: int, show_every: int = 4):
@@ -19,10 +43,11 @@ def play_game(seed: int, show_every: int = 4):
         obs = e.observe(agent)
         legal = np.where(obs["action_mask"] == 1)[0]
         action = int(legal[rng.integers(len(legal))])
+        move_desc = describe_action(action, agent)
         e.step(action)
         step += 1
         if step % show_every == 0:
-            print(f"\n  Move {step}:")
+            print(f"\n  Move {step}: {move_desc}")
             e.render()
 
     # Final state
@@ -34,4 +59,4 @@ def play_game(seed: int, show_every: int = 4):
 
 if __name__ == "__main__":
     for seed in [42, 99, 7]:
-        play_game(seed)
+        play_game(seed, show_every=1)
