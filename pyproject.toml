@@ -13,6 +13,9 @@ dependencies = [
 dev = ["pytest>=7.0"]
 rl = ["torch>=2.0", "tensorboard>=2.14"]
 
+[tool.setuptools]
+packages = ["pylos_env", "pylos_rl"]
+
 [build-system]
 requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
