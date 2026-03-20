@@ -1,0 +1,52 @@
+# Sources
+
+## Inception Labs / Mercury
+- https://inceptionlabs.ai/blog/introducing-mercury-our-general-chat-model
+- https://inceptionlabs.ai/blog/mercury-refresh
+- https://arxiv.org/html/2506.17298v1 (Mercury: Ultra-Fast Language Models Based on Diffusion — technical report)
+- https://huggingface.co/papers/2506.17298
+- https://techcrunch.com/2025/02/26/inception-emerges-from-stealth-with-a-new-type-of-ai-model/
+- https://techcrunch.com/2025/11/06/inception-raises-50-million-to-build-diffusion-models-for-code-and-text/
+- https://www.mayfield.com/introducing-inception-labs/
+- https://chatgate.ai/post/mercury-2
+- https://www.developersdigest.tech/blog/mercury-2-diffusion-llm
+- https://www.digitalapplied.com/blog/inception-labs-mercury-2-diffusion-llm-speed-guide
+- https://rits.shanghai.nyu.edu/ai/inception-launches-mercury-2-diffusion-powered-reasoning-at-1000-tokens-per-second/
+- https://forum.gnoppix.org/t/inception-launches-mercury-2-the-first-diffusion-based-language-reasoning-model/4629
+- https://aws.amazon.com/marketplace/pp/prodview-v5jonejj5thk6
+- https://www.ibm.com/think/news/diffusion-models-llms
+- https://www.mexc.com/news/789216
+
+## Google DeepMind / Gemini Diffusion
+- https://deepmind.google/models/gemini-diffusion/
+- https://www.cometapi.com/what-is-gemini-diffusion/
+- https://handyai.substack.com/p/googles-text-diffusion-experiment
+- https://the-decoder.com/gemini-diffusion-could-be-googles-most-important-i-o-news-that-slipped-under-the-radar/
+- https://mlq.ai/news/google-unveils-gemini-diffusion-new-ultra-fast-ai-model-at-google-io-2025/
+- https://gigazine.net/gsc_news/en/20250521-google-gemini-diffusion
+
+## Benchmarks & Leaderboards
+- https://artificialanalysis.ai/leaderboards/models (Artificial Analysis — independent speed/quality benchmarks)
+- https://lmarena.ai/leaderboard (Chatbot Arena / LM Arena leaderboard)
+- https://news.lmarena.ai/copilot-arena/ (Copilot Arena for code LLMs)
+- https://llm-stats.com/models/mercury-2
+
+## Academic Papers — Diffusion LLMs
+- https://arxiv.org/html/2510.18480v1 (How Efficient Are Diffusion Language Models? — critical examination)
+- https://arxiv.org/html/2410.21035v2 (Fast LLMs via Self-Distillation Through Time)
+- https://arxiv.org/html/2510.04146v1 (Performance Characterization of Diffusion vs Autoregressive LMs)
+- https://arxiv.org/html/2505.21467v2 (Accelerating Diffusion LM Inference via KV Caching)
+- https://arxiv.org/html/2506.00413v1 (Accelerating Diffusion LLMs via Adaptive Parallel Decoding)
+- https://arxiv.org/html/2509.15188v3 (Fast and Fluent Diffusion Language Models)
+- https://hao-ai-lab.github.io/blogs/text-diffusion/ (AUP: Accuracy Meets Parallelism in dLLMs)
+
+## General Coverage
+- https://www.funblocks.net/aitools/reviews/mercury-2
+- https://computertech.co/mercury-2-review/
+- https://www.geeky-gadgets.com/diffusion-reasoning-speed-test/
+- https://www.laava.nl/news/mercury-2-diffusion-llm-speed
+- https://www.theneuron.ai/explainer-articles/diffusion-energy-based-models-mercury-2-kona-beyond-autoregressive-ai/
+- https://ai.rs/ai-developer/mercury-2-diffusion-reasoning-llm
+- https://scalebytech.com/inception-labs-mercury-shatters-code-generation-delays-with-diffusion-ai/
+- https://nuung.medium.com/llm-diffusion-llm-vs-autoregressive-llm-c885bfa664ba
+- https://www.pymnts.com/artificial-intelligence-2/2025/silicon-valley-startup-inception-labs-creates-faster-llm/
