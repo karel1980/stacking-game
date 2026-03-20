@@ -2,11 +2,11 @@
 name = "pylos-env"
 version = "0.1.0"
 description = "PettingZoo environment for the Pylos board game"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 dependencies = [
     "pettingzoo>=1.24.0",
     "gymnasium>=0.28.0",
-    "numpy>=1.21.0",
+    "numpy>=2.1.0",
 ]
 
 [project.optional-dependencies]
