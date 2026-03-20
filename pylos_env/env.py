@@ -138,7 +138,14 @@ class raw_env(AECEnv, EzPickle):
 
             self.game.apply_take_back(game_action)
 
-            if self.game.phase == "place":
+            if self.game.done:
+                winner = self.game.winner
+                loser = 1 - winner
+                self.rewards[self.possible_agents[winner]] = 1
+                self.rewards[self.possible_agents[loser]] = -1
+                self.terminations = {a: True for a in self.agents}
+                self.agent_selection = self._agent_selector.next()
+            elif self.game.phase == "place":
                 # Take-back phase ended, turn passed to opponent
                 self.agent_selection = self._agent_selector.next()
             # else: still in take_back phase, same agent continues
