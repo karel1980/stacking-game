@@ -1,13 +1,20 @@
 """Wraps the PettingZoo Pylos env into a single-agent Gymnasium env for training.
 
 The opponent is controlled by a policy function passed at construction time.
+Includes reward shaping for intermediate signals.
 """
 
 import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 
-from pylos_env.env import raw_env as PylosRawEnv, TOTAL_ACTIONS, OBS_DIM
+from pylos_env.env import raw_env as PylosRawEnv, TOTAL_ACTIONS, OBS_DIM, ACTION_PASS
+from pylos_env.game import cell_level
+
+# Shaping reward magnitudes (small relative to terminal ±1)
+REWARD_SQUARE = 0.05       # formed a square (take-back opportunity)
+REWARD_TAKE_BACK = 0.04    # successfully took back a sphere
+REWARD_LEVEL_PLACE = 0.02  # per-level bonus for placing higher
 
 
 class SelfPlayEnv(gym.Env):
@@ -36,35 +43,53 @@ class SelfPlayEnv(gym.Env):
         if seed is not None:
             self._rng = np.random.default_rng(seed)
         self.aec.reset()
-        # If opponent goes first (shouldn't happen, player_0 starts), handle it
         self._play_opponent_turns()
         obs = self.aec.observe(self._agent)
         return obs, {}
 
+    def _shape_reward(self, action):
+        """Compute shaping reward based on the action about to be taken."""
+        game = self.aec.game
+        r = 0.0
+        if game.phase == "place":
+            if action < 30:
+                # Place from reserve — bonus for higher levels
+                r += REWARD_LEVEL_PLACE * cell_level(action)
+            elif action < 930:
+                # Raise — bonus for destination level
+                dst = (action - 30) % 30
+                r += REWARD_LEVEL_PLACE * cell_level(dst)
+        else:
+            # Take-back phase
+            if action != ACTION_PASS and action >= 931:
+                r += REWARD_TAKE_BACK
+        return r
+
     def step(self, action):
+        phase_before = self.aec.game.phase
+        shaping = self._shape_reward(action)
+
         self.aec.step(action)
 
-        # Check if game ended after our move
         if all(self.aec.terminations.values()):
             return self._terminal_result()
 
-        # Play opponent turns (and our take-back if still our turn in take-back phase)
-        # After our place action, if we formed a square, it's still our turn for take-back
-        # The AEC env handles this: agent_selection stays on us for take-back
-        # But from the RL perspective, we handle take-back as separate steps
+        # Detect square formation: was in place phase, now in take_back
+        if phase_before == "place" and self.aec.game.phase == "take_back":
+            shaping += REWARD_SQUARE
+
         if self.aec.agent_selection == self._agent:
-            # Still our turn (take-back phase) — return obs for next action
             obs = self.aec.observe(self._agent)
-            return obs, 0.0, False, False, {}
+            return obs, shaping, False, False, {}
 
         # Opponent's turn(s)
         self._play_opponent_turns()
 
         if all(self.aec.terminations.values()):
-            return self._terminal_result()
+            return self._terminal_result(shaping)
 
         obs = self.aec.observe(self._agent)
-        return obs, 0.0, False, False, {}
+        return obs, shaping, False, False, {}
 
     def _play_opponent_turns(self):
         """Let opponent play until it's our turn or game ends."""
@@ -81,7 +106,7 @@ class SelfPlayEnv(gym.Env):
             action = self.opponent_fn(obs["observation"], mask)
             self.aec.step(action)
 
-    def _terminal_result(self):
+    def _terminal_result(self, bonus=0.0):
         reward = self.aec.rewards.get(self._agent, 0.0)
         obs = self.aec.observe(self._agent)
-        return obs, float(reward), True, False, {}
+        return obs, float(reward) + bonus, True, False, {}
