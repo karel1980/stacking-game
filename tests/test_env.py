@@ -4,8 +4,8 @@ import pytest
 from pettingzoo.test import api_test, seed_test
 
 from pylos_env import env, raw_env
-from pylos_env.env import TOTAL_ACTIONS, ACTION_PASS, NUM_PLACE_ACTIONS
-from pylos_env.game import PylosGame, SUPPORT_MAP, RESTING_ON, cell_level
+from pylos_env.env import TOTAL_ACTIONS, ACTION_PASS, NUM_PLACE_ACTIONS, OBS_DIM
+from pylos_env.game import PylosGame, SUPPORT_MAP, RESTING_ON, cell_level, NUM_CELLS
 
 
 class TestPettingZooAPI:
@@ -35,18 +35,20 @@ class TestEnvBasics:
         e = raw_env()
         e.reset()
         obs = e.observe("player_0")
-        assert obs["observation"].shape == (32,)
+        assert obs["observation"].shape == (OBS_DIM,)
         assert obs["action_mask"].shape == (TOTAL_ACTIONS,)
 
     def test_initial_observation_values(self):
         e = raw_env()
         e.reset()
         obs = e.observe("player_0")
-        # Board should be empty
-        assert np.all(obs["observation"][:30] == 0)
-        # Reserves should be 15 each
-        assert obs["observation"][30] == 15
-        assert obs["observation"][31] == 15
+        # Own/opp channels should be empty
+        assert np.all(obs["observation"][:NUM_CELLS] == 0)
+        assert np.all(obs["observation"][NUM_CELLS:NUM_CELLS * 2] == 0)
+        # Reserves should be 1.0 (15/15)
+        base = NUM_CELLS * 5
+        assert obs["observation"][base] == pytest.approx(1.0)
+        assert obs["observation"][base + 1] == pytest.approx(1.0)
 
     def test_initial_mask_only_base_placements(self):
         e = raw_env()
@@ -65,12 +67,14 @@ class TestObservationRelative:
         e.reset()
         # Player 0 places at pos 0
         e.step(0)
-        # From player_1's perspective, pos 0 should be opponent (2)
+        # From player_1's perspective, pos 0 should be opponent (channel 1)
         obs1 = e.observe("player_1")
-        assert obs1["observation"][0] == 2
-        # From player_0's perspective, pos 0 should be own (1)
+        assert obs1["observation"][NUM_CELLS + 0] == 1.0  # opp channel
+        assert obs1["observation"][0] == 0.0               # own channel
+        # From player_0's perspective, pos 0 should be own (channel 0)
         obs0 = e.observe("player_0")
-        assert obs0["observation"][0] == 1
+        assert obs0["observation"][0] == 1.0               # own channel
+        assert obs0["observation"][NUM_CELLS + 0] == 0.0   # opp channel
 
 
 class TestTurnFlow:

@@ -7,10 +7,18 @@ Action space (Discrete(961)):
   931-960: take back sphere at board position (action - 931)
 
 Observation space (Dict):
-  "observation": Box(0, 2, shape=(32,), int8)
-    - [0:30]  board cells (0=empty, 1=self, 2=opponent)
-    - [30]    own reserve count
-    - [31]    opponent reserve count
+  "observation": Box(0, 1, shape=(154,), float32)
+    Per-cell channels (5 × 30 = 150):
+    - [0:30]    own sphere (binary)
+    - [30:60]   opponent sphere (binary)
+    - [60:90]   level (normalized 0-1)
+    - [90:120]  support fill ratio
+    - [120:150] square proximity (best own fraction)
+    Global features (4):
+    - [150] own reserves / 15
+    - [151] opponent reserves / 15
+    - [152] phase (0=place, 1=take_back)
+    - [153] take_backs_remaining / 2
   "action_mask": Box(0, 1, shape=(961,), int8)
 """
 
