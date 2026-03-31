@@ -25,12 +25,25 @@ from pettingzoo import AECEnv
 from pettingzoo.utils import wrappers
 from pettingzoo.utils.agent_selector import agent_selector
 
-from pylos_env.game import NUM_CELLS, PylosGame
+from pylos_env.game import (
+    NUM_CELLS, PylosGame, SUPPORT_MAP, RESTING_ON,
+    SQUARES_PER_LEVEL, LEVEL_OFFSET, LEVEL_SIZE, cell_level,
+)
 
 NUM_PLACE_ACTIONS = 30 + 30 * 30  # 930
 ACTION_PASS = 930
 NUM_TAKE_BACK_ACTIONS = 31  # pass + 30 positions
 TOTAL_ACTIONS = NUM_PLACE_ACTIONS + NUM_TAKE_BACK_ACTIONS  # 961
+
+# Precompute static per-cell features
+_CELL_LEVEL = np.array([cell_level(i) / 3.0 for i in range(NUM_CELLS)], dtype=np.float32)
+_CELL_SQUARES = [[] for _ in range(NUM_CELLS)]  # squares each cell belongs to
+for _lv_sqs in SQUARES_PER_LEVEL:
+    for _sq in _lv_sqs:
+        for _c in _sq:
+            _CELL_SQUARES[_c].append(_sq)
+
+OBS_DIM = NUM_CELLS * 5 + 4  # 154
 
 
 def env(**kwargs):
@@ -60,7 +73,7 @@ class raw_env(AECEnv, EzPickle):
         self.action_spaces = {a: spaces.Discrete(TOTAL_ACTIONS) for a in self.agents}
         self.observation_spaces = {
             a: spaces.Dict({
-                "observation": spaces.Box(0, 15, shape=(32,), dtype=np.int8),
+                "observation": spaces.Box(0.0, 1.0, shape=(OBS_DIM,), dtype=np.float32),
                 "action_mask": spaces.Box(0, 1, shape=(TOTAL_ACTIONS,), dtype=np.int8),
             })
             for a in self.agents
@@ -77,16 +90,37 @@ class raw_env(AECEnv, EzPickle):
         opp_idx = 1 - player_idx
         pv = player_idx + 1
         ov = opp_idx + 1
+        board = self.game.board
 
-        # Remap board: own=1, opponent=2, empty=0
-        obs = np.zeros(32, dtype=np.int8)
+        obs = np.zeros(OBS_DIM, dtype=np.float32)
+
+        # Per-cell features (5 channels × 30 cells)
         for i in range(NUM_CELLS):
-            if self.game.board[i] == pv:
-                obs[i] = 1
-            elif self.game.board[i] == ov:
-                obs[i] = 2
-        obs[30] = self.game.reserves[player_idx]
-        obs[31] = self.game.reserves[opp_idx]
+            v = board[i]
+            # Channel 0: own sphere
+            obs[i] = 1.0 if v == pv else 0.0
+            # Channel 1: opponent sphere
+            obs[NUM_CELLS + i] = 1.0 if v == ov else 0.0
+            # Channel 2: level (static, precomputed)
+            obs[NUM_CELLS * 2 + i] = _CELL_LEVEL[i]
+            # Channel 3: support fill ratio
+            if i in SUPPORT_MAP:
+                obs[NUM_CELLS * 3 + i] = sum(1 for s in SUPPORT_MAP[i] if board[s] != 0) / 4.0
+            else:
+                obs[NUM_CELLS * 3 + i] = 1.0  # level 0 always supported
+            # Channel 4: square proximity (best own fraction in any square containing cell)
+            best = 0.0
+            for sq in _CELL_SQUARES[i]:
+                own_count = sum(1 for c in sq if board[c] == pv)
+                best = max(best, own_count / 4.0)
+            obs[NUM_CELLS * 4 + i] = best
+
+        # Global features
+        base = NUM_CELLS * 5
+        obs[base] = self.game.reserves[player_idx] / 15.0
+        obs[base + 1] = self.game.reserves[opp_idx] / 15.0
+        obs[base + 2] = 1.0 if self.game.phase == "take_back" else 0.0
+        obs[base + 3] = self.game.take_backs_remaining / 2.0
 
         mask = np.zeros(TOTAL_ACTIONS, dtype=np.int8)
         if agent == self.agent_selection:
@@ -98,7 +132,7 @@ class raw_env(AECEnv, EzPickle):
                     if a == 0:
                         mask[ACTION_PASS] = 1
                     else:
-                        mask[930 + a] = 1  # take_back pos = a-1, action = 931 + (a-1)
+                        mask[930 + a] = 1
 
         return {"observation": obs, "action_mask": mask}
 

@@ -1,32 +1,43 @@
-"""Neural network for Pylos RL agent: shared backbone, policy + value heads."""
+"""Neural network for Pylos RL agent: residual backbone, policy + value heads."""
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-from pylos_env.env import TOTAL_ACTIONS
+from pylos_env.env import TOTAL_ACTIONS, OBS_DIM
+
+
+class ResBlock(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.fc1 = nn.Linear(dim, dim)
+        self.fc2 = nn.Linear(dim, dim)
+
+    def forward(self, x):
+        return F.relu(x + self.fc2(F.relu(self.fc1(x))))
 
 
 class PylosNet(nn.Module):
-    """MLP with action-masked policy head and value head."""
+    """Residual MLP with action-masked policy head and value head."""
 
-    def __init__(self, obs_dim: int = 32, hidden: int = 256):
+    def __init__(self, obs_dim: int = OBS_DIM, hidden: int = 256, n_blocks: int = 4):
         super().__init__()
-        self.backbone = nn.Sequential(
-            nn.Linear(obs_dim, hidden),
-            nn.ReLU(),
-            nn.Linear(hidden, hidden),
-            nn.ReLU(),
+        self.input_proj = nn.Sequential(nn.Linear(obs_dim, hidden), nn.ReLU())
+        self.blocks = nn.Sequential(*(ResBlock(hidden) for _ in range(n_blocks)))
+        self.policy_head = nn.Sequential(
+            nn.Linear(hidden, hidden // 2), nn.ReLU(),
+            nn.Linear(hidden // 2, TOTAL_ACTIONS),
         )
-        self.policy_head = nn.Linear(hidden, TOTAL_ACTIONS)
-        self.value_head = nn.Linear(hidden, 1)
+        self.value_head = nn.Sequential(
+            nn.Linear(hidden, hidden // 2), nn.ReLU(),
+            nn.Linear(hidden // 2, 1),
+        )
 
     def forward(self, obs: torch.Tensor, action_mask: torch.Tensor):
         """Returns (log_probs, value) with illegal actions masked out."""
-        h = self.backbone(obs)
+        h = self.blocks(self.input_proj(obs))
         logits = self.policy_head(h)
-        # Mask illegal actions to -inf before softmax
         logits = logits + (1 - action_mask) * (-1e8)
         log_probs = F.log_softmax(logits, dim=-1)
         value = self.value_head(h).squeeze(-1)

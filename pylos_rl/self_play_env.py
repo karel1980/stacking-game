@@ -7,7 +7,7 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 
-from pylos_env.env import raw_env as PylosRawEnv, TOTAL_ACTIONS
+from pylos_env.env import raw_env as PylosRawEnv, TOTAL_ACTIONS, OBS_DIM
 
 
 class SelfPlayEnv(gym.Env):
@@ -20,7 +20,7 @@ class SelfPlayEnv(gym.Env):
         self.aec = PylosRawEnv()
         self.opponent_fn = opponent_fn or self._random_opponent
         self.observation_space = spaces.Dict({
-            "observation": spaces.Box(0, 15, shape=(32,), dtype=np.int8),
+            "observation": spaces.Box(0.0, 1.0, shape=(OBS_DIM,), dtype=np.float32),
             "action_mask": spaces.Box(0, 1, shape=(TOTAL_ACTIONS,), dtype=np.int8),
         })
         self.action_space = spaces.Discrete(TOTAL_ACTIONS)
