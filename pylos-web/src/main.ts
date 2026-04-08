@@ -71,64 +71,150 @@ scene.add(new THREE.AmbientLight(0x606068, 1.2));
 function makeWoodTexture(
   baseR: number, baseG: number, baseB: number,
   grainR: number, grainG: number, grainB: number,
-  size = 512
-): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = size; canvas.height = size;
-  const ctx = canvas.getContext('2d')!;
+  size = 1024
+): { color: THREE.CanvasTexture; roughness: THREE.CanvasTexture } {
+  const colorData = new Uint8ClampedArray(size * size * 4);
+  const roughData = new Uint8ClampedArray(size * size * 4);
 
-  // Base color
-  ctx.fillStyle = `rgb(${baseR},${baseG},${baseB})`;
-  ctx.fillRect(0, 0, size, size);
+  // Precompute grain offsets — slow drift that tiles seamlessly
+  // Each grain band has a fixed Y position + gentle per-X offset
+  const bandY: number[] = [];
+  const bandWidth: number[] = [];
+  const bandShade: number[] = [];
+  const bandStrength: number[] = [];
+  let by = Math.random() * 10;
+  while (by < size) {
+    bandY.push(by);
+    const isAccent = Math.random() < 0.15;
+    bandWidth.push(isAccent ? 10 + Math.random() * 18 : 2 + Math.random() * 8);
+    bandShade.push(isAccent ? 0.4 + Math.random() * 0.3 : 0.6 + Math.random() * 0.4);
+    bandStrength.push(isAccent ? 0.4 + Math.random() * 0.15 : 0.15 + Math.random() * 0.25);
+    by += 8 + Math.random() * 30;
+  }
+  const NUM_BANDS = bandY.length;
 
-  // Wood grain lines
-  ctx.globalAlpha = 0.35;
-  for (let i = 0; i < 120; i++) {
-    const y = Math.random() * size;
-    const thickness = 0.5 + Math.random() * 2.5;
-    const waviness = 0.3 + Math.random() * 1.5;
-    const freq = 0.005 + Math.random() * 0.015;
-    const shade = 0.7 + Math.random() * 0.3;
-    ctx.strokeStyle = `rgb(${grainR * shade | 0},${grainG * shade | 0},${grainB * shade | 0})`;
-    ctx.lineWidth = thickness;
-    ctx.beginPath();
-    for (let x = 0; x < size; x += 2) {
-      const yy = y + Math.sin(x * freq) * waviness * 20 + Math.sin(x * freq * 3.7) * waviness * 5;
-      x === 0 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy);
+  // Low-frequency tileable noise for subtle color variation
+  // Use a few sine components that tile over `size`
+  const freqs = [1, 2, 3, 5, 7];
+  const phasesX = freqs.map(() => Math.random() * Math.PI * 2);
+  const phasesY = freqs.map(() => Math.random() * Math.PI * 2);
+
+  function tileNoise(x: number, y: number): number {
+    let v = 0;
+    for (let i = 0; i < freqs.length; i++) {
+      const f = freqs[i] * Math.PI * 2 / size;
+      v += Math.sin(x * f + phasesX[i]) * Math.cos(y * f * 0.3 + phasesY[i]);
     }
-    ctx.stroke();
+    return v / freqs.length; // -1..1
   }
 
-  // Subtle noise overlay
-  ctx.globalAlpha = 0.06;
-  for (let i = 0; i < 15000; i++) {
-    const x = Math.random() * size, y = Math.random() * size;
-    const v = Math.random() > 0.5 ? 255 : 0;
-    ctx.fillStyle = `rgb(${v},${v},${v})`;
-    ctx.fillRect(x, y, 1.5, 1.5);
+  // Grain drift: very gentle tileable horizontal wobble
+  const driftFreqs = [1, 2, 4];
+  const driftPhases = driftFreqs.map(() => Math.random() * Math.PI * 2);
+  const driftAmps = [3, 1.5, 0.5];
+  function grainDrift(x: number): number {
+    let d = 0;
+    for (let i = 0; i < driftFreqs.length; i++) {
+      d += driftAmps[i] * Math.sin(x * driftFreqs[i] * Math.PI * 2 / size + driftPhases[i]);
+    }
+    return d;
   }
 
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  return tex;
+  for (let py = 0; py < size; py++) {
+    for (let px = 0; px < size; px++) {
+      const idx = (py * size + px) * 4;
+      const drift = grainDrift(px);
+
+      // Base color with subtle variation
+      const nv = tileNoise(px, py);
+      let r = baseR + nv * 10;
+      let g = baseG + nv * 8;
+      let b = baseB + nv * 6;
+      let rough = 140;
+
+      // Grain: darken pixels near band centers
+      const y = py;
+      for (let i = 0; i < NUM_BANDS; i++) {
+        const by = bandY[i];
+        // Distance to band center, wrapping for seamless tiling
+        let dy = Math.abs(((y + drift - by) % size + size) % size);
+        if (dy > size / 2) dy = size - dy;
+        const hw = bandWidth[i] / 2;
+        if (dy < hw) {
+          const t = 1 - dy / hw;
+          const strength = t * t * bandStrength[i];
+          const s = bandShade[i];
+          r = r * (1 - strength) + grainR * s * strength;
+          g = g * (1 - strength) + grainG * s * strength;
+          b = b * (1 - strength) + grainB * s * strength;
+          rough += t * 15; // grain is slightly rougher
+        }
+      }
+
+      // Fine grain noise — very subtle, high frequency
+      const fine = Math.sin(py * 0.8) * Math.sin(py * 2.1 + px * 0.01) * 4;
+      r += fine; g += fine * 0.8; b += fine * 0.6;
+
+      colorData[idx] = Math.max(0, Math.min(255, r));
+      colorData[idx + 1] = Math.max(0, Math.min(255, g));
+      colorData[idx + 2] = Math.max(0, Math.min(255, b));
+      colorData[idx + 3] = 255;
+
+      roughData[idx] = roughData[idx + 1] = roughData[idx + 2] = Math.max(0, Math.min(255, rough));
+      roughData[idx + 3] = 255;
+    }
+  }
+
+  function toTexture(data: Uint8ClampedArray): THREE.CanvasTexture {
+    const c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    const ctx2 = c.getContext('2d')!;
+    const img = ctx2.createImageData(size, size);
+    img.data.set(data);
+    ctx2.putImageData(img, 0, 0);
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    return tex;
+  }
+
+  return { color: toTexture(colorData), roughness: toTexture(roughData) };
 }
 
-// Light wood: maple/birch tones — darker
-const lightWoodTex = makeWoodTexture(180, 155, 120, 120, 90, 55);
-const matLight = new THREE.MeshStandardMaterial({ map: lightWoodTex, roughness: 0.55, metalness: 0 });
+// Light wood: maple/birch tones
+const lightWood = makeWoodTexture(180, 155, 120, 120, 90, 55);
+const matLight = new THREE.MeshStandardMaterial({ map: lightWood.color, roughnessMap: lightWood.roughness, roughness: 0.75, metalness: 0 });
 
-// Dark wood: walnut tones — darker
-const darkWoodTex = makeWoodTexture(70, 38, 22, 35, 15, 5);
-const matDark = new THREE.MeshStandardMaterial({ map: darkWoodTex, roughness: 0.5, metalness: 0 });
+// Dark wood: walnut tones
+const darkWood = makeWoodTexture(70, 38, 22, 35, 15, 5);
+const matDark = new THREE.MeshStandardMaterial({ map: darkWood.color, roughnessMap: darkWood.roughness, roughness: 0.7, metalness: 0 });
 const matGhost = new THREE.MeshStandardMaterial({ color: 0xaaccff, roughness: 0.1, transparent: true, opacity: 0.3, depthWrite: false });
 
 // ── Board material ─────────────────────────────────────────────────────
-const boardWoodTex = makeWoodTexture(160, 120, 75, 100, 65, 30);
-boardWoodTex.repeat.set(2, 2);
-const matBoard = new THREE.MeshStandardMaterial({ map: boardWoodTex, roughness: 0.45, metalness: 0 });
+const boardWood = makeWoodTexture(160, 120, 75, 100, 65, 30);
+boardWood.color.repeat.set(2, 2);
+boardWood.roughness.repeat.set(2, 2);
+boardWood.color.rotation = Math.PI / 2;
+boardWood.roughness.rotation = Math.PI / 2;
+boardWood.color.center.set(0.5, 0.5);
+boardWood.roughness.center.set(0.5, 0.5);
+const matBoard = new THREE.MeshStandardMaterial({ map: boardWood.color, roughnessMap: boardWood.roughness, roughness: 0.85, metalness: 0 });
 
 // ── Geometry ───────────────────────────────────────────────────────────
-const sphereGeo = new THREE.SphereGeometry(BALL_RADIUS, 48, 32);
+// Icosahedron sphere with position-based UVs — no seam
+function makeSeamlessSphere(radius: number, detail: number): THREE.BufferGeometry {
+  const geo = new THREE.IcosahedronGeometry(radius, detail);
+  const pos = geo.attributes.position;
+  const uvs = new Float32Array(pos.count * 2);
+  for (let i = 0; i < pos.count; i++) {
+    // Project position onto sphere surface for UV (cube-style projection)
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    uvs[i * 2] = 0.5 + Math.atan2(z, x) / (Math.PI * 2);
+    uvs[i * 2 + 1] = 0.5 + Math.asin(Math.max(-1, Math.min(1, y / radius))) / Math.PI;
+  }
+  geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  return geo;
+}
+const sphereGeo = makeSeamlessSphere(BALL_RADIUS, 5);
 
 // ── Build board with CSG ───────────────────────────────────────────────
 const BOARD_THICKNESS = 2.5;
@@ -177,6 +263,16 @@ function buildBoard(): THREE.Mesh {
   }
 
   const result = new THREE.Mesh(board.geometry, matBoard);
+
+  // Reproject UVs from top-down so recesses share the board's texture
+  const geo = result.geometry;
+  const pos = geo.attributes.position;
+  const uv = geo.attributes.uv;
+  for (let i = 0; i < pos.count; i++) {
+    uv.setXY(i, pos.getX(i) / BOARD_W + 0.5, pos.getZ(i) / BOARD_D + 0.5);
+  }
+  uv.needsUpdate = true;
+
   // CSG geometry is in brush-A local space; the brush position places the board top at y=0.
   // Re-apply brush position + offset so board surface sits at y = BOARD_SURFACE_Y.
   result.position.set(0, -BOARD_THICKNESS / 2 + BOARD_SURFACE_Y, 0);
