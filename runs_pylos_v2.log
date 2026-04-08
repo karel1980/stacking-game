@@ -1,0 +1,52 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/karelvervaeke/work/personal/pylos-ai/pylos_rl/train.py", line 262, in <module>
+    main()
+    ~~~~^^
+  File "/Users/karelvervaeke/work/personal/pylos-ai/pylos_rl/train.py", line 258, in main
+    train(args)
+    ~~~~~^^^^^^
+  File "/Users/karelvervaeke/work/personal/pylos-ai/pylos_rl/train.py", line 155, in train
+    loss_stats = ppo_update(net, optimizer, buffer, epochs=args.ppo_epochs,
+                            batch_size=args.batch_size, ent_coef=ent_coef)
+  File "/Users/karelvervaeke/work/personal/pylos-ai/pylos_rl/ppo.py", line 65, in ppo_update
+    log_probs, values = net(obs_t[idx], mask_t[idx])
+                        ~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/karelvervaeke/work/personal/pylos-ai/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/karelvervaeke/work/personal/pylos-ai/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/Users/karelvervaeke/work/personal/pylos-ai/pylos_rl/network.py", line 39, in forward
+    h = self.blocks(self.input_proj(obs))
+  File "/Users/karelvervaeke/work/personal/pylos-ai/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/karelvervaeke/work/personal/pylos-ai/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/Users/karelvervaeke/work/personal/pylos-ai/.venv/lib/python3.13/site-packages/torch/nn/modules/container.py", line 253, in forward
+    input = module(input)
+  File "/Users/karelvervaeke/work/personal/pylos-ai/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/karelvervaeke/work/personal/pylos-ai/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/Users/karelvervaeke/work/personal/pylos-ai/pylos_rl/network.py", line 18, in forward
+    return F.relu(x + self.fc2(F.relu(self.fc1(x))))
+                      ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/karelvervaeke/work/personal/pylos-ai/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/karelvervaeke/work/personal/pylos-ai/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/Users/karelvervaeke/work/personal/pylos-ai/.venv/lib/python3.13/site-packages/torch/nn/modules/linear.py", line 134, in forward
+    return F.linear(input, self.weight, self.bias)
+           ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+Training Pylos RL agent | 1000 iters | obs_dim=154 hidden=256 steps=4096
+[   10/1000] elo=1039 vs_random=94% pg=-0.0190 vf=0.1976 ent=1.439 lr=3.0e-04 (2.5s)
+[   20/1000] elo=1123 vs_random=96% pg=-0.0202 vf=0.0604 ent=1.168 lr=3.0e-04 (2.8s)
+[   30/1000] elo=1186 vs_random=98% vs_latest=70% pg=-0.0205 vf=0.0728 ent=0.982 lr=3.0e-04 (3.9s)
+[   40/1000] elo=1232 vs_random=92% vs_latest=76% pg=-0.0110 vf=0.0345 ent=0.814 lr=3.0e-04 (4.1s)
+[   50/1000] elo=1275 vs_random=100% vs_latest=64% pg=-0.0181 vf=0.0292 ent=0.835 lr=3.0e-04 (4.3s)

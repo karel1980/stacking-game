@@ -176,8 +176,9 @@ function buildBoard(): THREE.Mesh {
   }
 
   const result = new THREE.Mesh(board.geometry, matBoard);
-  // Shift board up so surface aligns with y = BALL_RADIUS
-  result.position.y = BOARD_SURFACE_Y;
+  // CSG geometry is in brush-A local space; the brush position places the board top at y=0.
+  // Re-apply brush position + offset so board surface sits at y = BOARD_SURFACE_Y.
+  result.position.set(0, -BOARD_THICKNESS / 2 + BOARD_SURFACE_Y, 0);
   result.castShadow = true;
   result.receiveShadow = true;
   return result;
