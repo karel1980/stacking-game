@@ -420,9 +420,11 @@ function beginTurn() {
   animating = false;
   awaitingRaiseDst = false;
   if (game.done) {
-    const w = game.winner === 0 ? 'Light' : 'Dark';
-    setStatus(`Game over! ${w} wins!`);
-    awaitingHuman = false; passBtn.style.display = 'none'; return;
+    const humanWon = game.winner === humanPlayer;
+    setStatus(humanWon ? 'You win!' : 'You lose!');
+    awaitingHuman = false; passBtn.style.display = 'none';
+    showVictory(humanWon);
+    return;
   }
   const cp = game.currentPlayer;
   const pname = cp === 0 ? 'Light' : 'Dark';
@@ -458,16 +460,16 @@ function handleHumanClick(cellIdx: number) {
   const g = game;
   if (g.phase === 'place') {
     const actions = g.legalPlaceActions();
+    if (awaitingRaiseDst) {
+      const action = 30 + raiseSrc * 30 + cellIdx;
+      if (actions.includes(action)) { awaitingRaiseDst = false; executeAction(action); return; }
+      setStatus('Invalid raise destination'); awaitingRaiseDst = false; return;
+    }
     if (actions.includes(cellIdx)) { executeAction(cellIdx); return; }
     const pv = g.playerVal(humanPlayer);
     if (g.board[cellIdx] === pv && g.isUncovered(cellIdx)) {
       raiseSrc = cellIdx; awaitingRaiseDst = true;
       setStatus(`Raise from ${cellIdx}: click destination`); return;
-    }
-    if (awaitingRaiseDst) {
-      const action = 30 + raiseSrc * 30 + cellIdx;
-      if (actions.includes(action)) { awaitingRaiseDst = false; executeAction(action); return; }
-      setStatus('Invalid raise destination'); awaitingRaiseDst = false; return;
     }
   } else {
     const action = cellIdx + 1;
@@ -551,6 +553,31 @@ startBtn.addEventListener('click', async () => {
     else { saveSnapshot(); beginTurn(); }
   }
   flyIn();
+});
+
+// ── Victory overlay ────────────────────────────────────────────────────
+const victoryOverlay = document.getElementById('victoryOverlay')!;
+const victoryTitle = document.getElementById('victoryTitle')!;
+const victorySubtitle = document.getElementById('victorySubtitle')!;
+
+function showVictory(humanWon: boolean) {
+  victoryTitle.textContent = humanWon ? 'You Win!' : 'You Lose!';
+  victoryTitle.className = humanWon ? 'win' : 'lose';
+  victorySubtitle.textContent = humanWon ? 'Congratulations!' : 'Better luck next time';
+  setTimeout(() => victoryOverlay.classList.add('show'), 600);
+}
+
+document.getElementById('playAgainBtn')!.addEventListener('click', () => {
+  victoryOverlay.classList.remove('show');
+  game.reset();
+  // Clear board visuals
+  for (const [, b] of balls) scene.remove(b.mesh);
+  balls.clear(); nextBallId = 0;
+  boardSlots.fill(null);
+  moveLog.length = 0; refreshLog();
+  initBalls();
+  saveSnapshot();
+  beginTurn();
 });
 
 // ── Render loop ────────────────────────────────────────────────────────
