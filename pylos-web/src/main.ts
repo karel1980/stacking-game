@@ -6,6 +6,7 @@ import {
   PylosGame, GameSnapshot, BOARD_POS, reservePositions, NUM_CELLS,
   cellLevel, SUPPORT_MAP, RESTING_ON, describeAction, Phase,
 } from './game';
+import { initAI, getAIAction } from './ai';
 
 // ── Constants ──────────────────────────────────────────────────────────
 const BALL_RADIUS = 1;
@@ -433,16 +434,16 @@ function beginTurn() {
   } else {
     setStatus(`${pname} thinking...`);
     awaitingHuman = false;
-    computerTimeout = window.setTimeout(computerMove, 3000);
+    computerTimeout = window.setTimeout(computerMove, 500);
   }
 }
 
 function computerMove() {
   computerTimeout = null;
   if (game.done) return;
-  const actions = game.phase === 'place' ? game.legalPlaceActions() : game.legalTakeBackActions();
-  if (!actions.length) return;
-  executeAction(actions[Math.floor(Math.random() * actions.length)]);
+  getAIAction(game).then(action => {
+    if (!game.done) executeAction(action);
+  });
 }
 
 // ── Human click ────────────────────────────────────────────────────────
@@ -525,7 +526,13 @@ const startBtn = document.getElementById('startBtn')!;
 pickLightBtn.addEventListener('click', () => { humanPlayer = 0; computerPlayer = 1; pickLightBtn.classList.add('selected'); pickDarkBtn.classList.remove('selected'); });
 pickDarkBtn.addEventListener('click', () => { humanPlayer = 1; computerPlayer = 0; pickDarkBtn.classList.add('selected'); pickLightBtn.classList.remove('selected'); });
 
-startBtn.addEventListener('click', () => {
+// Load AI model eagerly
+const aiReady = initAI();
+
+startBtn.addEventListener('click', async () => {
+  startBtn.textContent = 'Loading AI…';
+  startBtn.setAttribute('disabled', '');
+  await aiReady;
   setupEl.style.display = 'none';
   document.getElementById('gamePanel')!.style.display = '';
   document.getElementById('logPanel')!.style.display = '';
