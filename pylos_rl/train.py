@@ -127,6 +127,7 @@ def train(args):
 
     print(f"Training Pylos RL agent | {args.iterations} iters | "
           f"obs_dim={OBS_DIM} hidden={args.hidden} steps={args.steps}")
+    train_start = time.time()
 
     for iteration in range(1, args.iterations + 1):
         t0 = time.time()
@@ -192,13 +193,15 @@ def train(args):
                 wr_latest = None
 
             elapsed = time.time() - t0
+            avg_iter = (time.time() - train_start) / iteration
+            eta_min = avg_iter * (args.iterations - iteration) / 60
             latest_str = f" vs_latest={wr_latest:.0%}" if wr_latest is not None else ""
             print(f"[{iteration:>5}/{args.iterations}] "
                   f"elo={current_elo:.0f} "
                   f"vs_random={wr_random:.0%}{latest_str} "
                   f"pg={loss_stats['pg_loss']:.4f} vf={loss_stats['vf_loss']:.4f} "
                   f"ent={loss_stats['entropy']:.3f} lr={scheduler.get_last_lr()[0]:.1e} "
-                  f"({elapsed:.1f}s)")
+                  f"({elapsed:.1f}s) ETA {eta_min:.0f}min")
 
         # Save checkpoint
         if iteration % args.ckpt_interval == 0:

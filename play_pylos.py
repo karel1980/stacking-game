@@ -14,7 +14,7 @@ from pylos_env.env import raw_env as PylosRawEnv, TOTAL_ACTIONS, ACTION_PASS
 from pylos_env.game import LEVEL_OFFSET, LEVEL_SIZE, cell_level, NUM_CELLS
 from pylos_rl.network import PylosNet
 
-DEFAULT_MODEL = "runs/pylos_200/checkpoints/final.pt"
+DEFAULT_MODEL = "runs/pylos-v2/checkpoints/ckpt_000250.pt"
 
 # ANSI helpers
 RST = "\033[0m"
