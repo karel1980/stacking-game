@@ -9,7 +9,7 @@ from pylos_env.env import OBS_DIM, TOTAL_ACTIONS
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("checkpoint", help="Path to .pt checkpoint")
-    p.add_argument("-o", "--output", default="pylos-web/public/pylos.onnx")
+    p.add_argument("-o", "--output", default="stacking-game/public/model.onnx")
     args = p.parse_args()
 
     model = PylosNet()
