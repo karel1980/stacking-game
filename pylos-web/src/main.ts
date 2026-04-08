@@ -64,8 +64,59 @@ bottom.position.set(0, 3, 0); scene.add(bottom);
 scene.add(new THREE.AmbientLight(0x606068, 1.2));
 
 // ── Materials ──────────────────────────────────────────────────────────
-const matLight = new THREE.MeshStandardMaterial({ color: 0xece0c8, roughness: 0.3, metalness: 0 });
-const matDark = new THREE.MeshStandardMaterial({ color: 0x5c3a28, roughness: 0.3, metalness: 0 });
+// ── Procedural wood texture ─────────────────────────────────────────────
+function makeWoodTexture(
+  baseR: number, baseG: number, baseB: number,
+  grainR: number, grainG: number, grainB: number,
+  size = 512
+): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+
+  // Base color
+  ctx.fillStyle = `rgb(${baseR},${baseG},${baseB})`;
+  ctx.fillRect(0, 0, size, size);
+
+  // Wood grain lines
+  ctx.globalAlpha = 0.35;
+  for (let i = 0; i < 120; i++) {
+    const y = Math.random() * size;
+    const thickness = 0.5 + Math.random() * 2.5;
+    const waviness = 0.3 + Math.random() * 1.5;
+    const freq = 0.005 + Math.random() * 0.015;
+    const shade = 0.7 + Math.random() * 0.3;
+    ctx.strokeStyle = `rgb(${grainR * shade | 0},${grainG * shade | 0},${grainB * shade | 0})`;
+    ctx.lineWidth = thickness;
+    ctx.beginPath();
+    for (let x = 0; x < size; x += 2) {
+      const yy = y + Math.sin(x * freq) * waviness * 20 + Math.sin(x * freq * 3.7) * waviness * 5;
+      x === 0 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy);
+    }
+    ctx.stroke();
+  }
+
+  // Subtle noise overlay
+  ctx.globalAlpha = 0.06;
+  for (let i = 0; i < 15000; i++) {
+    const x = Math.random() * size, y = Math.random() * size;
+    const v = Math.random() > 0.5 ? 255 : 0;
+    ctx.fillStyle = `rgb(${v},${v},${v})`;
+    ctx.fillRect(x, y, 1.5, 1.5);
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
+// Light wood: maple/birch tones — darker
+const lightWoodTex = makeWoodTexture(180, 155, 120, 120, 90, 55);
+const matLight = new THREE.MeshStandardMaterial({ map: lightWoodTex, roughness: 0.55, metalness: 0 });
+
+// Dark wood: walnut tones — darker
+const darkWoodTex = makeWoodTexture(70, 38, 22, 35, 15, 5);
+const matDark = new THREE.MeshStandardMaterial({ map: darkWoodTex, roughness: 0.5, metalness: 0 });
 const matGround = new THREE.MeshStandardMaterial({ color: 0x4a4642, roughness: 0.8 });
 const matMarker = new THREE.MeshStandardMaterial({ color: 0x4a4540, roughness: 0.6 });
 const matGhost = new THREE.MeshStandardMaterial({ color: 0xaaccff, roughness: 0.1, transparent: true, opacity: 0.3, depthWrite: false });
@@ -102,6 +153,7 @@ function spawnBall(gpos: [number, number, number], player: number): number {
   const mesh = new THREE.Mesh(sphereGeo, player === 0 ? matLight : matDark);
   const p = g2t(...gpos);
   mesh.position.copy(p); mesh.castShadow = true; mesh.receiveShadow = true;
+  mesh.rotation.set(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
   scene.add(mesh);
   const id = nextBallId++;
   balls.set(id, { mesh, player });
