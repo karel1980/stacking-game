@@ -1,4 +1,4 @@
-// Pylos game logic — direct port from Python pylos_env/game.py
+// Game logic — direct port from Python game engine
 
 export const LEVEL_OFFSET = [0, 16, 25, 29];
 export const LEVEL_SIZE = [4, 3, 2, 1];

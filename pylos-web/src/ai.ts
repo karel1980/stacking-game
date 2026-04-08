@@ -1,7 +1,7 @@
 /**
- * AI opponent using ONNX model exported from PylosNet.
+ * AI opponent using ONNX model.
  *
- * Observation layout (154 floats) — must match pylos_env/env.py:
+ * Observation layout (154 floats) — must match training env:
  *   [0:30]    own sphere (binary)
  *   [30:60]   opponent sphere (binary)
  *   [60:90]   level (normalized 0-1)
@@ -41,7 +41,7 @@ for (const lvSqs of SQUARES_PER_LEVEL)
 
 let session: ort.InferenceSession | null = null;
 
-export async function initAI(url = 'pylos.onnx') {
+export async function initAI(url = 'model.onnx') {
   ort.env.wasm.numThreads = 1;
   ort.env.wasm.wasmPaths = './';
   session = await ort.InferenceSession.create(url, {
