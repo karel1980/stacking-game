@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Play Pylos interactively against the trained RL agent.
+"""Play Stacking Game interactively against the trained RL agent.
 
 Uses arrow-key navigation for selecting layers and positions.
 """
@@ -10,11 +10,11 @@ import termios
 import numpy as np
 import torch
 
-from pylos_env.env import raw_env as PylosRawEnv, TOTAL_ACTIONS, ACTION_PASS
-from pylos_env.game import LEVEL_OFFSET, LEVEL_SIZE, cell_level, NUM_CELLS
-from pylos_rl.network import PylosNet
+from stacking_env.env import raw_env as StackingRawEnv, TOTAL_ACTIONS, ACTION_PASS
+from stacking_env.game import LEVEL_OFFSET, LEVEL_SIZE, cell_level, NUM_CELLS
+from stacking_rl.network import StackingNet
 
-DEFAULT_MODEL = "runs/pylos-v2/checkpoints/ckpt_000250.pt"
+DEFAULT_MODEL = "runs/stacking-v2/checkpoints/ckpt_000250.pt"
 
 # ANSI helpers
 RST = "\033[0m"
@@ -212,8 +212,8 @@ def describe_action(action: int) -> str:
 
 # ── agent ────────────────────────────────────────────────────────────────
 
-def load_agent(path: str) -> PylosNet:
-    net = PylosNet()
+def load_agent(path: str) -> StackingNet:
+    net = StackingNet()
     ckpt = torch.load(path, map_location="cpu", weights_only=True)
     state = ckpt.get("model_state") or ckpt.get("model_state_dict") or ckpt
     net.load_state_dict(state)
@@ -221,7 +221,7 @@ def load_agent(path: str) -> PylosNet:
     return net
 
 
-def agent_act(net: PylosNet, obs: np.ndarray, mask: np.ndarray) -> int:
+def agent_act(net: StackingNet, obs: np.ndarray, mask: np.ndarray) -> int:
     action, _, _ = net.get_action(obs, mask, deterministic=True)
     return action
 
@@ -306,7 +306,7 @@ def main():
     human_idx = idx
     human_agent = f"player_{human_idx}"
 
-    env = PylosRawEnv(render_mode="ansi")
+    env = StackingRawEnv(render_mode="ansi")
     env.reset()
     env.render()
 

@@ -1,9 +1,9 @@
-"""Export PylosNet checkpoint to ONNX for use in the web app."""
+"""Export StackingNet checkpoint to ONNX for use in the web app."""
 
 import argparse
 import torch
-from pylos_rl.network import PylosNet
-from pylos_env.env import OBS_DIM, TOTAL_ACTIONS
+from stacking_rl.network import StackingNet
+from stacking_env.env import OBS_DIM, TOTAL_ACTIONS
 
 
 def main():
@@ -12,7 +12,7 @@ def main():
     p.add_argument("-o", "--output", default="stacking-game/public/model.onnx")
     args = p.parse_args()
 
-    model = PylosNet()
+    model = StackingNet()
     ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
     model.load_state_dict(ckpt["model_state"])
     model.eval()

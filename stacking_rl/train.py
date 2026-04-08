@@ -1,4 +1,4 @@
-"""Training script: PPO self-play for Pylos with ELO tracking and tensorboard."""
+"""Training script: PPO self-play for Stacking Game with ELO tracking and tensorboard."""
 
 import argparse
 import copy
@@ -11,10 +11,10 @@ import numpy as np
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from pylos_env.env import OBS_DIM
-from pylos_rl.network import PylosNet
-from pylos_rl.self_play_env import SelfPlayEnv
-from pylos_rl.ppo import RolloutBuffer, ppo_update
+from stacking_env.env import OBS_DIM
+from stacking_rl.network import StackingNet
+from stacking_rl.self_play_env import SelfPlayEnv
+from stacking_rl.ppo import RolloutBuffer, ppo_update
 
 
 # ---------------------------------------------------------------------------
@@ -22,7 +22,7 @@ from pylos_rl.ppo import RolloutBuffer, ppo_update
 # ---------------------------------------------------------------------------
 
 def make_opponent_fn(net, deterministic=False):
-    """Create an opponent function from a PylosNet."""
+    """Create an opponent function from a StackingNet."""
     def opponent(obs, mask):
         with torch.no_grad():
             obs_t = torch.FloatTensor(obs).unsqueeze(0)
@@ -107,7 +107,7 @@ def train(args):
     ckpt_dir.mkdir(parents=True, exist_ok=True)
     writer = SummaryWriter(log_dir=str(out_dir / "tb"))
 
-    net = PylosNet(obs_dim=OBS_DIM, hidden=args.hidden)
+    net = StackingNet(obs_dim=OBS_DIM, hidden=args.hidden)
     optimizer = torch.optim.Adam(net.parameters(), lr=args.lr)
 
     # Cosine annealing LR schedule
@@ -125,7 +125,7 @@ def train(args):
     # Entropy coefficient annealing: start high, decay to encourage exploitation
     ent_start, ent_end = args.ent_coef, args.ent_coef * 0.1
 
-    print(f"Training Pylos RL agent | {args.iterations} iters | "
+    print(f"Training Stacking Game RL agent | {args.iterations} iters | "
           f"obs_dim={OBS_DIM} hidden={args.hidden} steps={args.steps}")
     train_start = time.time()
 
@@ -213,7 +213,7 @@ def train(args):
                 "elo": current_elo,
             }, ckpt_path)
 
-            frozen = PylosNet(obs_dim=OBS_DIM, hidden=args.hidden)
+            frozen = StackingNet(obs_dim=OBS_DIM, hidden=args.hidden)
             frozen.load_state_dict(copy.deepcopy(net.state_dict()))
             frozen.eval()
             opponent_pool.append(frozen)
@@ -245,7 +245,7 @@ def train(args):
 
 
 def main():
-    p = argparse.ArgumentParser(description="Train Pylos RL agent with PPO self-play")
+    p = argparse.ArgumentParser(description="Train Stacking Game RL agent with PPO self-play")
     p.add_argument("--iterations", type=int, default=1000, help="Training iterations")
     p.add_argument("--steps", type=int, default=4096, help="Rollout steps per iteration")
     p.add_argument("--ppo-epochs", type=int, default=6, help="PPO epochs per update")
@@ -256,7 +256,7 @@ def main():
     p.add_argument("--eval-interval", type=int, default=10, help="Evaluate every N iterations")
     p.add_argument("--eval-games", type=int, default=50, help="Games per evaluation")
     p.add_argument("--ckpt-interval", type=int, default=25, help="Checkpoint every N iterations")
-    p.add_argument("--out-dir", type=str, default="runs/pylos", help="Output directory")
+    p.add_argument("--out-dir", type=str, default="runs/stacking", help="Output directory")
     args = p.parse_args()
     train(args)
 

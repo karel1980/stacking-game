@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg';
 import {
-  PylosGame, GameSnapshot, BOARD_POS, reservePositions, NUM_CELLS,
+  StackingGame, GameSnapshot, BOARD_POS, reservePositions, NUM_CELLS,
   cellLevel, SUPPORT_MAP, RESTING_ON, describeAction, Phase,
 } from './game';
 import { initAI, getAIAction } from './ai';
@@ -408,7 +408,7 @@ renderer.domElement.addEventListener('mousemove', updateHover);
 renderer.domElement.addEventListener('click', onClick);
 
 // ── Game state ─────────────────────────────────────────────────────────
-const game = new PylosGame();
+const game = new StackingGame();
 let humanPlayer = 0;
 let computerPlayer = 1;
 let isHuman: [boolean, boolean] = [true, false]; // [light, dark]

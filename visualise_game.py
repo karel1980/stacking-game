@@ -1,4 +1,4 @@
-"""3D Pylos board visualisation using Panda3D + simplepbr.
+"""3D Stacking Game board visualisation using Panda3D + simplepbr.
 
 Coordinate system:
   - Balls have radius 1, so diameter = 2.
@@ -27,12 +27,12 @@ from panda3d.core import (
     ClockObject, TextNode,
 )
 import simplepbr
-from pylos_env.game import PylosGame, cell_level, SUPPORT_MAP, RESTING_ON, NUM_CELLS
+from stacking_env.game import StackingGame, cell_level, SUPPORT_MAP, RESTING_ON, NUM_CELLS
 
 loadPrcFileData("", "framebuffer-multisample 1")
 loadPrcFileData("", "multisamples 4")
 loadPrcFileData("", "win-size 1400 900")
-loadPrcFileData("", "window-title Pylos 3D")
+loadPrcFileData("", "window-title Stacking Game 3D")
 
 SQRT2 = math.sqrt(2.0)
 BALL_RADIUS = 1.0
@@ -139,7 +139,7 @@ def _desc_action(action, phase, player):
         return f"{pname} takes back cell {action - 1}"
 
 
-class PylosVis(ShowBase):
+class StackingVis(ShowBase):
     def __init__(self):
         super().__init__()
         simplepbr.init(msaa_samples=4, enable_shadows=True)
@@ -167,7 +167,7 @@ class PylosVis(ShowBase):
         self.board_slots = {i: None for i in range(30)}
 
         # Game state
-        self.game = PylosGame()
+        self.game = StackingGame()
         self.human_player = 0   # set by setup screen
         self.computer_player = 1
         self._history = []      # list of (game_snapshot, vis_snapshot) for undo
@@ -295,7 +295,7 @@ class PylosVis(ShowBase):
             frameSize=(-0.6, 0.6, -0.45, 0.45),
             pos=(0, 0, 0),
         )
-        DirectLabel(text="PYLOS", scale=0.12, pos=(0, 0, 0.28),
+        DirectLabel(text="STACKING GAME", scale=0.12, pos=(0, 0, 0.28),
                     parent=self._setup_frame, text_fg=HUD_TXT, frameColor=(0,0,0,0))
         DirectLabel(text="Choose your color:", scale=0.05, pos=(0, 0, 0.12),
                     parent=self._setup_frame, text_fg=HUD_DIM, frameColor=(0,0,0,0))
@@ -842,5 +842,5 @@ class PylosVis(ShowBase):
 
 
 if __name__ == "__main__":
-    app = PylosVis()
+    app = StackingVis()
     app.run()

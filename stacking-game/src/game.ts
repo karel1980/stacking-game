@@ -73,7 +73,7 @@ export interface GameSnapshot {
   winner: number;
 }
 
-export class PylosGame {
+export class StackingGame {
   board: number[];       // 0=empty, 1=player0(light), 2=player1(dark)
   reserves: [number, number];
   currentPlayer: number; // 0 or 1

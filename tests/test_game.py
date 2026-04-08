@@ -1,9 +1,9 @@
-"""Tests for PylosGame core logic."""
+"""Tests for StackingGame core logic."""
 import numpy as np
 import pytest
-from pylos_env.game import (
+from stacking_env.game import (
     NUM_CELLS, LEVEL_OFFSET, LEVEL_SIZE, SUPPORT_MAP, RESTING_ON,
-    SQUARES_PER_LEVEL, cell_level, PylosGame,
+    SQUARES_PER_LEVEL, cell_level, StackingGame,
 )
 
 
@@ -52,7 +52,7 @@ class TestBoardStructure:
 
 class TestGameInit:
     def test_initial_state(self):
-        g = PylosGame()
+        g = StackingGame()
         assert np.all(g.board == 0)
         assert g.reserves == [15, 15]
         assert g.current_player == 0
@@ -60,7 +60,7 @@ class TestGameInit:
         assert not g.done
 
     def test_reset(self):
-        g = PylosGame()
+        g = StackingGame()
         g.board[0] = 1
         g.reserves[0] = 10
         g.reset()
@@ -70,14 +70,14 @@ class TestGameInit:
 
 class TestPlacement:
     def test_place_on_empty_base(self):
-        g = PylosGame()
+        g = StackingGame()
         g.apply_place(0)  # place at position 0
         assert g.board[0] == 1  # player_0 = value 1
         assert g.reserves[0] == 14
         assert g.current_player == 1  # turn switched
 
     def test_cannot_place_on_unsupported(self):
-        g = PylosGame()
+        g = StackingGame()
         legal = g.legal_place_actions()
         # Level 1+ positions should not be legal when base is empty
         for a in legal:
@@ -85,7 +85,7 @@ class TestPlacement:
                 assert a < 16  # only base positions
 
     def test_place_on_supported_upper_level(self):
-        g = PylosGame()
+        g = StackingGame()
         # Fill a 2x2 on base with alternating players to avoid square bonus
         # positions 0,1,4,5 support position 16
         g.board[0] = 1
@@ -100,7 +100,7 @@ class TestPlacement:
         assert g.board[16] == 1
 
     def test_all_base_positions_legal_initially(self):
-        g = PylosGame()
+        g = StackingGame()
         legal = g.legal_place_actions()
         base_placements = [a for a in legal if a < 16]
         assert len(base_placements) == 16
@@ -108,7 +108,7 @@ class TestPlacement:
 
 class TestRaise:
     def test_raise_to_higher_level(self):
-        g = PylosGame()
+        g = StackingGame()
         # pos 16 is supported by 0,1,4,5. We can't raise from any of those 4
         # because removing them breaks support. Use a sphere NOT in 16's support.
         # pos 3 (row 0, col 3) is not in SUPPORT_MAP[16]=(0,1,4,5)
@@ -130,7 +130,7 @@ class TestRaise:
         assert g.reserves[0] == 14  # reserve unchanged (raise doesn't use reserve)
 
     def test_cannot_raise_covered_sphere(self):
-        g = PylosGame()
+        g = StackingGame()
         # pos 0 is covered by pos 16
         g.board[0] = 1
         g.board[1] = 2
@@ -144,7 +144,7 @@ class TestRaise:
         assert len(raise_from_0) == 0
 
     def test_cannot_raise_to_same_or_lower_level(self):
-        g = PylosGame()
+        g = StackingGame()
         g.board[0] = 1
         g.reserves = [14, 15]
         g.current_player = 0
@@ -158,7 +158,7 @@ class TestRaise:
 
 class TestSquareDetection:
     def test_completing_square_triggers_take_back(self):
-        g = PylosGame()
+        g = StackingGame()
         # Player 0 has 0,1,4 — placing at 5 completes a square
         g.board[0] = 1
         g.board[1] = 1
@@ -171,7 +171,7 @@ class TestSquareDetection:
         assert g.take_backs_remaining == 2
 
     def test_no_square_no_take_back(self):
-        g = PylosGame()
+        g = StackingGame()
         g.board[0] = 1
         g.board[1] = 1
         g.reserves = [13, 15]
@@ -184,7 +184,7 @@ class TestSquareDetection:
 class TestTakeBack:
     def _setup_take_back(self):
         """Set up a game in take_back phase."""
-        g = PylosGame()
+        g = StackingGame()
         g.board[0] = 1
         g.board[1] = 1
         g.board[4] = 1
@@ -234,7 +234,7 @@ class TestTakeBack:
 
 class TestWinConditions:
     def test_win_by_placing_on_top(self):
-        g = PylosGame()
+        g = StackingGame()
         # Fill everything up to level 3
         g.board[25] = 1
         g.board[26] = 2
@@ -252,7 +252,7 @@ class TestWinConditions:
         assert g.winner == 0
 
     def test_lose_by_no_moves(self):
-        g = PylosGame()
+        g = StackingGame()
         g.reserves = [0, 0]
         # Fill entire board except top, no raises possible
         for i in range(29):
@@ -269,7 +269,7 @@ class TestRandomPlaythrough:
         """Run several random games to ensure no crashes."""
         rng = np.random.default_rng(42)
         for _ in range(20):
-            g = PylosGame()
+            g = StackingGame()
             moves = 0
             while not g.done and moves < 500:
                 if g.phase == "place":

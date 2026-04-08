@@ -3,9 +3,9 @@ import numpy as np
 import pytest
 from pettingzoo.test import api_test, seed_test
 
-from pylos_env import env, raw_env
-from pylos_env.env import TOTAL_ACTIONS, ACTION_PASS, NUM_PLACE_ACTIONS, OBS_DIM
-from pylos_env.game import PylosGame, SUPPORT_MAP, RESTING_ON, cell_level, NUM_CELLS
+from stacking_env import env, raw_env
+from stacking_env.env import TOTAL_ACTIONS, ACTION_PASS, NUM_PLACE_ACTIONS, OBS_DIM
+from stacking_env.game import StackingGame, SUPPORT_MAP, RESTING_ON, cell_level, NUM_CELLS
 
 
 class TestPettingZooAPI:
@@ -201,7 +201,7 @@ class TestAdversarial:
 
     def test_raise_removes_support_for_destination_check(self):
         """When checking raise destinations, the source is temporarily removed."""
-        g = PylosGame()
+        g = StackingGame()
         # pos 3 is NOT in SUPPORT_MAP[16]=(0,1,4,5), so removing it won't break support
         g.board[0] = 2
         g.board[1] = 2
@@ -216,7 +216,7 @@ class TestAdversarial:
 
     def test_take_back_after_raise_square(self):
         """Completing a square via raise should also trigger take-back."""
-        g = PylosGame()
+        g = StackingGame()
         # Fill base fully
         for i in range(16):
             g.board[i] = 1 if i % 2 == 0 else 2

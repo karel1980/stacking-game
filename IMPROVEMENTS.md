@@ -1,4 +1,4 @@
-# Pylos AI — Improvement Ideas
+# Stacking Game AI — Improvement Ideas
 
 ## Implemented (2026-03-31)
 
@@ -12,7 +12,7 @@
 ### High Impact
 
 - **MCTS at inference time** — 100-200 rollouts using the policy network as prior, AlphaZero-style. Biggest single strength boost after training.
-- **Symmetry augmentation** — Pylos board has 4-fold rotational symmetry. Augment training data by rotating observations for 4× effective data.
+- **Symmetry augmentation** — Stacking Game board has 4-fold rotational symmetry. Augment training data by rotating observations for 4× effective data.
 - **Opponent temperature scheduling** — have pool opponents play with varying temperatures (some greedy, some exploratory) to expose the agent to diverse play styles.
 
 ### Medium Impact

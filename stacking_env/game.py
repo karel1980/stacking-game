@@ -1,4 +1,4 @@
-"""Core Pylos game logic.
+"""Core Stacking Game game logic.
 
 Board layout:
   Level 0: 4x4 = 16 positions (indices 0-15)
@@ -63,7 +63,7 @@ def cell_level(idx: int) -> int:
     return 0
 
 
-class PylosGame:
+class StackingGame:
     def __init__(self):
         self.reset()
 

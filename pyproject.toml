@@ -1,7 +1,7 @@
 [project]
-name = "pylos-env"
+name = "stacking-env"
 version = "0.1.0"
-description = "PettingZoo environment for the Pylos board game"
+description = "PettingZoo environment for a ball-stacking pyramid board game"
 requires-python = ">=3.11"
 dependencies = [
     "pettingzoo>=1.24.0",
@@ -14,7 +14,7 @@ dev = ["pytest>=7.0"]
 rl = ["torch>=2.0", "tensorboard>=2.14"]
 
 [tool.setuptools]
-packages = ["pylos_env", "pylos_rl"]
+packages = ["stacking_env", "stacking_rl"]
 
 [build-system]
 requires = ["setuptools>=64"]

@@ -1,4 +1,4 @@
-"""Wraps the PettingZoo Pylos env into a single-agent Gymnasium env for training.
+"""Wraps the PettingZoo Stacking Game env into a single-agent Gymnasium env for training.
 
 The opponent is controlled by a policy function passed at construction time.
 Includes reward shaping for intermediate signals.
@@ -8,8 +8,8 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 
-from pylos_env.env import raw_env as PylosRawEnv, TOTAL_ACTIONS, OBS_DIM, ACTION_PASS
-from pylos_env.game import cell_level
+from stacking_env.env import raw_env as StackingRawEnv, TOTAL_ACTIONS, OBS_DIM, ACTION_PASS
+from stacking_env.game import cell_level
 
 # Shaping reward magnitudes (small relative to terminal ±1)
 REWARD_SQUARE = 0.05       # formed a square (take-back opportunity)
@@ -24,7 +24,7 @@ class SelfPlayEnv(gym.Env):
 
     def __init__(self, opponent_fn=None):
         super().__init__()
-        self.aec = PylosRawEnv()
+        self.aec = StackingRawEnv()
         self.opponent_fn = opponent_fn or self._random_opponent
         self.observation_space = spaces.Dict({
             "observation": spaces.Box(0.0, 1.0, shape=(OBS_DIM,), dtype=np.float32),

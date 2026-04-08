@@ -1,4 +1,4 @@
-"""PettingZoo AEC environment for Pylos.
+"""PettingZoo AEC environment for Stacking Game.
 
 Action space (Discrete(961)):
   0-29:    place from reserve at board position i
@@ -33,8 +33,8 @@ from pettingzoo import AECEnv
 from pettingzoo.utils import wrappers
 from pettingzoo.utils.agent_selector import agent_selector
 
-from pylos_env.game import (
-    NUM_CELLS, PylosGame, SUPPORT_MAP, RESTING_ON,
+from stacking_env.game import (
+    NUM_CELLS, StackingGame, SUPPORT_MAP, RESTING_ON,
     SQUARES_PER_LEVEL, LEVEL_OFFSET, LEVEL_SIZE, cell_level,
 )
 
@@ -65,7 +65,7 @@ def env(**kwargs):
 class raw_env(AECEnv, EzPickle):
     metadata = {
         "render_modes": ["ansi"],
-        "name": "pylos_v0",
+        "name": "stacking_v0",
         "is_parallelizable": False,
     }
 
@@ -73,7 +73,7 @@ class raw_env(AECEnv, EzPickle):
         EzPickle.__init__(self, render_mode)
         super().__init__()
         self.render_mode = render_mode
-        self.game = PylosGame()
+        self.game = StackingGame()
 
         self.agents = ["player_0", "player_1"]
         self.possible_agents = self.agents[:]
@@ -208,7 +208,7 @@ class raw_env(AECEnv, EzPickle):
     def render(self):
         if self.render_mode != "ansi":
             return None
-        from pylos_env.game import LEVEL_OFFSET, LEVEL_SIZE
+        from stacking_env.game import LEVEL_OFFSET, LEVEL_SIZE
 
         # ANSI color codes
         RST = "\033[0m"

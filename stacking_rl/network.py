@@ -1,11 +1,11 @@
-"""Neural network for Pylos RL agent: residual backbone, policy + value heads."""
+"""Neural network for Stacking Game RL agent: residual backbone, policy + value heads."""
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-from pylos_env.env import TOTAL_ACTIONS, OBS_DIM
+from stacking_env.env import TOTAL_ACTIONS, OBS_DIM
 
 
 class ResBlock(nn.Module):
@@ -18,7 +18,7 @@ class ResBlock(nn.Module):
         return F.relu(x + self.fc2(F.relu(self.fc1(x))))
 
 
-class PylosNet(nn.Module):
+class StackingNet(nn.Module):
     """Residual MLP with action-masked policy head and value head."""
 
     def __init__(self, obs_dim: int = OBS_DIM, hidden: int = 256, n_blocks: int = 4):

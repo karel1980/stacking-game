@@ -1,7 +1,7 @@
-"""Demo: play random Pylos games and display the board."""
+"""Demo: play random Stacking Game games and display the board."""
 import numpy as np
-from pylos_env import raw_env
-from pylos_env.game import LEVEL_OFFSET, LEVEL_SIZE
+from stacking_env import raw_env
+from stacking_env.game import LEVEL_OFFSET, LEVEL_SIZE
 
 
 def _cell_coord(idx: int) -> str:
@@ -35,7 +35,7 @@ def play_game(seed: int, show_every: int = 4):
     step = 0
 
     print(f"\n\033[1m{'═' * 34}\033[0m")
-    print(f"\033[1m  PYLOS GAME  (seed={seed})\033[0m")
+    print(f"\033[1m  STACKING GAME GAME  (seed={seed})\033[0m")
     print(f"\033[1m{'═' * 34}\033[0m")
 
     while not all(e.terminations.values()):

@@ -1,4 +1,4 @@
-"""PPO training with GAE for the Pylos agent."""
+"""PPO training with GAE for the Stacking Game agent."""
 
 import torch
 import torch.nn as nn

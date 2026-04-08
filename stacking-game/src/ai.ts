@@ -21,7 +21,7 @@
 
 import * as ort from 'onnxruntime-web';
 import {
-  PylosGame, NUM_CELLS, SUPPORT_MAP, SQUARES_PER_LEVEL,
+  StackingGame, NUM_CELLS, SUPPORT_MAP, SQUARES_PER_LEVEL,
   cellLevel,
 } from './game';
 
@@ -50,7 +50,7 @@ export async function initAI(url = 'model.onnx') {
 }
 
 /** Build the 154-dim observation vector from the game state, from the perspective of the current player. */
-function buildObs(game: PylosGame): Float32Array {
+function buildObs(game: StackingGame): Float32Array {
   const obs = new Float32Array(OBS_DIM);
   const cp = game.currentPlayer, pv = cp + 1, ov = 2 - cp;
   const board = game.board;
@@ -88,7 +88,7 @@ function buildObs(game: PylosGame): Float32Array {
 }
 
 /** Build the 961-dim action mask. */
-function buildMask(game: PylosGame): Float32Array {
+function buildMask(game: StackingGame): Float32Array {
   const mask = new Float32Array(TOTAL_ACTIONS);
   if (game.phase === 'place') {
     for (const a of game.legalPlaceActions()) mask[a] = 1;
@@ -109,7 +109,7 @@ function envToGameAction(action: number, phase: string): number {
 }
 
 /** Run the model and return the best legal game action. */
-export async function getAIAction(game: PylosGame): Promise<number> {
+export async function getAIAction(game: StackingGame): Promise<number> {
   if (!session) throw new Error('AI not initialized — call initAI() first');
 
   const obs = buildObs(game);
