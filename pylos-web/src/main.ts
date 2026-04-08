@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg';
 import {
   PylosGame, GameSnapshot, BOARD_POS, reservePositions, NUM_CELLS,
   cellLevel, SUPPORT_MAP, RESTING_ON, describeAction, Phase,
@@ -117,23 +119,72 @@ const matLight = new THREE.MeshStandardMaterial({ map: lightWoodTex, roughness: 
 // Dark wood: walnut tones — darker
 const darkWoodTex = makeWoodTexture(70, 38, 22, 35, 15, 5);
 const matDark = new THREE.MeshStandardMaterial({ map: darkWoodTex, roughness: 0.5, metalness: 0 });
-const matGround = new THREE.MeshStandardMaterial({ color: 0x4a4642, roughness: 0.8 });
-const matMarker = new THREE.MeshStandardMaterial({ color: 0x4a4540, roughness: 0.6 });
 const matGhost = new THREE.MeshStandardMaterial({ color: 0xaaccff, roughness: 0.1, transparent: true, opacity: 0.3, depthWrite: false });
+
+// ── Board material ─────────────────────────────────────────────────────
+const boardWoodTex = makeWoodTexture(160, 120, 75, 100, 65, 30);
+boardWoodTex.repeat.set(2, 2);
+const matBoard = new THREE.MeshStandardMaterial({ map: boardWoodTex, roughness: 0.45, metalness: 0 });
 
 // ── Geometry ───────────────────────────────────────────────────────────
 const sphereGeo = new THREE.SphereGeometry(BALL_RADIUS, 48, 32);
 
-// Ground
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(50, 50), matGround);
-ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+// ── Build board with CSG ───────────────────────────────────────────────
+const BOARD_THICKNESS = 2.5;
+const FILLET = 0.4;
+const BOARD_W = 18;   // x extent
+const BOARD_D = 24;   // z extent
+// Board surface will be at y = RECESS_DEPTH so cutter centers align with ball centers at y=BALL_RADIUS
+const BOARD_SURFACE_Y = BALL_RADIUS * 0.3; // matches RECESS_DEPTH inside buildBoard
 
-// Board markers
-const markerGeo = new THREE.CircleGeometry(0.45, 24);
-for (const [x, y] of BOARD_POS) {
-  const m = new THREE.Mesh(markerGeo, matMarker);
-  m.rotation.x = -Math.PI / 2; m.position.set(x, 0.02, -y); scene.add(m);
+// Storage area dimensions (each side has 8+7 balls in 2 rows)
+const STORAGE_W = 16.5;
+const STORAGE_D = 5;
+const STORAGE_DEPTH = BALL_RADIUS * 0.3; // shallow recess matching playing area
+const STORAGE_FILLET = 0.5;
+
+function buildBoard(): THREE.Mesh {
+  const evaluator = new Evaluator();
+
+  // Main body: rounded box, top surface at y=0 in local space
+  const bodyGeo = new RoundedBoxGeometry(BOARD_W, BOARD_THICKNESS, BOARD_D, 4, FILLET);
+  let board = new Brush(bodyGeo, matBoard);
+  board.position.set(0, -BOARD_THICKNESS / 2, 0);
+  board.updateMatrixWorld();
+
+  // Subtract ball recesses for 4x4 grid (level 0, cells 0-15)
+  // Raise cutter sphere so only a shallow cup is carved
+  const RECESS_DEPTH = BALL_RADIUS * 0.3;
+  const recessGeo = new THREE.SphereGeometry(BALL_RADIUS, 24, 16);
+  for (let i = 0; i < 16; i++) {
+    const [gx, gy] = BOARD_POS[i];
+    const cutter = new Brush(recessGeo);
+    cutter.position.set(gx, BALL_RADIUS - RECESS_DEPTH, -gy);
+    cutter.updateMatrixWorld();
+    board = evaluator.evaluate(board, cutter, SUBTRACTION);
+  }
+
+  // Subtract storage recesses — rounded box protruding above surface
+  // so the fillet creates a smooth lip transition
+  const storageH = STORAGE_DEPTH + STORAGE_FILLET;
+  const storageGeo = new RoundedBoxGeometry(STORAGE_W, storageH, STORAGE_D, 4, STORAGE_FILLET);
+  for (const zCenter of [9, -9]) {
+    const cutter = new Brush(storageGeo);
+    cutter.position.set(0, -STORAGE_DEPTH / 2 + STORAGE_FILLET / 2, zCenter);
+    cutter.updateMatrixWorld();
+    board = evaluator.evaluate(board, cutter, SUBTRACTION);
+  }
+
+  const result = new THREE.Mesh(board.geometry, matBoard);
+  // Shift board up so surface aligns with y = BALL_RADIUS
+  result.position.y = BOARD_SURFACE_Y;
+  result.castShadow = true;
+  result.receiveShadow = true;
+  return result;
 }
+
+const boardMesh = buildBoard();
+scene.add(boardMesh);
 
 // Ghost ball
 const ghost = new THREE.Mesh(sphereGeo, matGhost);
@@ -202,7 +253,7 @@ function updateAnims(dt: number) {
 // ── Raycasting (mouse → ground plane → nearest valid cell) ─────────────
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // y=0 in Three.js
+const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -BOARD_SURFACE_Y); // board surface at y=BALL_RADIUS
 let hoveredCell: number | null = null;
 
 function updateHover(event: MouseEvent) {
