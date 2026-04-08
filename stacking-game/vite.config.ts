@@ -8,10 +8,16 @@ export default defineConfig({
   },
   plugins: [
     viteStaticCopy({
-      targets: [{
-        src: 'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.wasm',
-        dest: '.',
-      }],
+      targets: [
+        {
+          src: 'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.wasm',
+          dest: '.',
+        },
+        {
+          src: 'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.mjs',
+          dest: '.',
+        },
+      ],
     }),
   ],
 });

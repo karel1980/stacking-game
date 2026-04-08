@@ -43,8 +43,10 @@ let session: ort.InferenceSession | null = null;
 
 export async function initAI(url = 'model.onnx') {
   ort.env.wasm.numThreads = 1;
-  ort.env.wasm.wasmPaths = './';
-  session = await ort.InferenceSession.create(url, {
+  // Resolve paths relative to document base (works with both ./ and /stacking-game/)
+  const base = document.querySelector('base')?.href ?? new URL('.', document.baseURI).href;
+  ort.env.wasm.wasmPaths = base;
+  session = await ort.InferenceSession.create(base + url, {
     executionProviders: ['wasm'],
   });
 }
