@@ -71,7 +71,7 @@ scene.add(new THREE.AmbientLight(0x606068, 1.2));
 function makeWoodTexture(
   baseR: number, baseG: number, baseB: number,
   grainR: number, grainG: number, grainB: number,
-  size = 1024
+  size = 512
 ): { color: THREE.CanvasTexture; roughness: THREE.CanvasTexture } {
   const colorData = new Uint8ClampedArray(size * size * 4);
   const roughData = new Uint8ClampedArray(size * size * 4);
@@ -182,10 +182,15 @@ function makeWoodTexture(
 
 // Light wood: maple/birch tones
 const lightWood = makeWoodTexture(180, 155, 120, 120, 90, 55);
+const BALL_TEX_SCALE = (2 * Math.PI * BALL_RADIUS) / (18 / 2); // match board texel density
+lightWood.color.repeat.set(BALL_TEX_SCALE, BALL_TEX_SCALE);
+lightWood.roughness.repeat.set(BALL_TEX_SCALE, BALL_TEX_SCALE);
 const matLight = new THREE.MeshStandardMaterial({ map: lightWood.color, roughnessMap: lightWood.roughness, roughness: 0.75, metalness: 0 });
 
 // Dark wood: walnut tones
 const darkWood = makeWoodTexture(70, 38, 22, 35, 15, 5);
+darkWood.color.repeat.set(BALL_TEX_SCALE, BALL_TEX_SCALE);
+darkWood.roughness.repeat.set(BALL_TEX_SCALE, BALL_TEX_SCALE);
 const matDark = new THREE.MeshStandardMaterial({ map: darkWood.color, roughnessMap: darkWood.roughness, roughness: 0.7, metalness: 0 });
 const matGhost = new THREE.MeshStandardMaterial({ color: 0xaaccff, roughness: 0.1, transparent: true, opacity: 0.3, depthWrite: false });
 
@@ -214,7 +219,7 @@ function makeSeamlessSphere(radius: number, detail: number): THREE.BufferGeometr
   geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
   return geo;
 }
-const sphereGeo = makeSeamlessSphere(BALL_RADIUS, 5);
+const sphereGeo = makeSeamlessSphere(BALL_RADIUS, 4);
 
 // ── Build board with CSG ───────────────────────────────────────────────
 const BOARD_THICKNESS = 2.5;
@@ -391,7 +396,7 @@ function getValidCells(): Set<number> {
       if (a < 30) valid.add(a);
       else { const code = a - 30; valid.add(Math.floor(code / 30)); if (awaitingRaiseDst && raiseSrc === Math.floor(code / 30)) valid.add(code % 30); }
     }
-    const pv = g.playerVal(humanPlayer);
+    const pv = g.playerVal(g.currentPlayer);
     for (let i = 0; i < NUM_CELLS; i++) if (g.board[i] === pv && g.isUncovered(i)) valid.add(i);
   } else {
     for (const a of g.legalTakeBackActions()) if (a > 0) valid.add(a - 1);
@@ -406,6 +411,7 @@ renderer.domElement.addEventListener('click', onClick);
 const game = new PylosGame();
 let humanPlayer = 0;
 let computerPlayer = 1;
+let isHuman: [boolean, boolean] = [true, false]; // [light, dark]
 let awaitingHuman = false;
 let animating = false;
 let awaitingRaiseDst = false;
@@ -465,6 +471,8 @@ const statusEl = document.getElementById('statusText')!;
 const undoBtn = document.getElementById('undoBtn') as HTMLButtonElement;
 const redoBtn = document.getElementById('redoBtn') as HTMLButtonElement;
 const passBtn = document.getElementById('passBtn') as HTMLButtonElement;
+const pauseBtn = document.getElementById('pauseBtn') as HTMLButtonElement;
+let paused = false;
 const logEntries = document.getElementById('logEntries')!;
 const logToggle = document.getElementById('logToggle')!;
 
@@ -488,6 +496,12 @@ logToggle.addEventListener('click', () => {
 undoBtn.addEventListener('click', doUndo);
 redoBtn.addEventListener('click', doRedo);
 passBtn.addEventListener('click', () => { if (awaitingHuman && game.phase === 'take_back') executeAction(0); });
+pauseBtn.addEventListener('click', () => {
+  paused = !paused;
+  pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+  if (paused) { cancelComputer(); setStatus('Paused'); }
+  else beginTurn();
+});
 
 async function doUndo() {
   if (history.length <= 1 || animating) return;
@@ -515,19 +529,28 @@ function cancelComputer() {
 function beginTurn() {
   animating = false;
   awaitingRaiseDst = false;
+  if (paused) { setStatus('Paused'); return; }
   if (game.done) {
-    const humanWon = game.winner === humanPlayer;
-    setStatus(humanWon ? 'You win!' : 'You lose!');
+    const w = game.winner;
+    const wname = w === 0 ? 'Light' : 'Dark';
+    if (isHuman[0] === isHuman[1]) {
+      // PvP or CvC — just say who won
+      setStatus(`${wname} wins!`);
+      showVictory(true, `${wname} wins!`);
+    } else {
+      const humanWon = isHuman[w];
+      setStatus(humanWon ? 'You win!' : 'You lose!');
+      showVictory(humanWon);
+    }
     awaitingHuman = false; passBtn.style.display = 'none';
-    showVictory(humanWon);
     return;
   }
   const cp = game.currentPlayer;
   const pname = cp === 0 ? 'Light' : 'Dark';
-  passBtn.style.display = game.phase === 'take_back' && cp === humanPlayer ? '' : 'none';
+  passBtn.style.display = game.phase === 'take_back' && isHuman[cp] ? '' : 'none';
 
-  if (cp === humanPlayer) {
-    setStatus(game.phase === 'take_back' ? 'Your turn: take back (or pass)' : 'Your turn: click a position');
+  if (isHuman[cp]) {
+    setStatus(game.phase === 'take_back' ? `${pname}: take back (or pass)` : `${pname}: click a position`);
     awaitingHuman = true;
   } else {
     setStatus(`${pname} thinking...`);
@@ -562,7 +585,7 @@ function handleHumanClick(cellIdx: number) {
       setStatus('Invalid raise destination'); awaitingRaiseDst = false; return;
     }
     if (actions.includes(cellIdx)) { executeAction(cellIdx); return; }
-    const pv = g.playerVal(humanPlayer);
+    const pv = g.playerVal(g.currentPlayer);
     if (g.board[cellIdx] === pv && g.isUncovered(cellIdx)) {
       raiseSrc = cellIdx; awaitingRaiseDst = true;
       setStatus(`Raise from ${cellIdx}: click destination`); return;
@@ -617,38 +640,100 @@ async function executeAction(action: number) {
 
 // ── Setup screen ───────────────────────────────────────────────────────
 const setupEl = document.getElementById('setup')!;
-const pickLightBtn = document.getElementById('pickLight')!;
-const pickDarkBtn = document.getElementById('pickDark')!;
 const startBtn = document.getElementById('startBtn')!;
+const resumeBtn = document.getElementById('resumeBtn')!;
+const menuBtn = document.getElementById('menuBtn') as HTMLButtonElement;
+let gameStarted = false;
 
-pickLightBtn.addEventListener('click', () => { humanPlayer = 0; computerPlayer = 1; pickLightBtn.classList.add('selected'); pickDarkBtn.classList.remove('selected'); });
-pickDarkBtn.addEventListener('click', () => { humanPlayer = 1; computerPlayer = 0; pickDarkBtn.classList.add('selected'); pickLightBtn.classList.remove('selected'); });
+// Toggle group logic
+for (const groupId of ['lightToggle', 'darkToggle']) {
+  const group = document.getElementById(groupId)!;
+  for (const btn of group.querySelectorAll('button')) {
+    btn.addEventListener('click', () => {
+      group.querySelector('.selected')?.classList.remove('selected');
+      btn.classList.add('selected');
+    });
+  }
+}
 
-// Load AI model eagerly
-const aiReady = initAI();
+// Load AI model lazily — only when needed
+let aiReady: Promise<void> | null = null;
+function ensureAI() {
+  if (!aiReady) aiReady = initAI();
+  return aiReady;
+}
 
 startBtn.addEventListener('click', async () => {
-  startBtn.textContent = 'Loading AI…';
-  startBtn.setAttribute('disabled', '');
-  await aiReady;
+  // Read config
+  const lightVal = document.querySelector('#lightToggle .selected')!.getAttribute('data-val');
+  const darkVal = document.querySelector('#darkToggle .selected')!.getAttribute('data-val');
+  isHuman = [lightVal === 'human', darkVal === 'human'];
+
+  // Only wait for AI if at least one side is AI
+  if (!isHuman[0] || !isHuman[1]) {
+    startBtn.textContent = 'Loading AI…';
+    startBtn.setAttribute('disabled', '');
+    await ensureAI();
+    startBtn.textContent = 'START';
+    startBtn.removeAttribute('disabled');
+  }
+
+  const firstGame = !gameStarted;
+
+  // Reset game if one is already running
+  if (gameStarted) {
+    victoryOverlay.classList.remove('show');
+    game.reset();
+    for (const [, b] of balls) scene.remove(b.mesh);
+    balls.clear(); nextBallId = 0;
+    boardSlots.fill(null);
+    moveLog.length = 0; refreshLog();
+    initBalls();
+  }
+
+  gameStarted = true;
+  paused = false;
+  pauseBtn.textContent = 'Pause';
+  showGame();
+  pauseBtn.style.display = (!isHuman[0] || !isHuman[1]) ? '' : 'none';
+  controls.enabled = true;
+
+  if (firstGame) {
+    // First time: fly-in animation
+    const startPos = camera.position.clone();
+    const endPos = new THREE.Vector3(18, 18, 14);
+    const dur = 2000, t0 = performance.now();
+    function flyIn() {
+      const t = Math.min((performance.now() - t0) / dur, 1);
+      const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      camera.position.lerpVectors(startPos, endPos, ease);
+      controls.update();
+      if (t < 1) requestAnimationFrame(flyIn);
+      else { saveSnapshot(); beginTurn(); }
+    }
+    flyIn();
+  } else {
+    saveSnapshot(); beginTurn();
+  }
+});
+
+function showGame() {
   setupEl.style.display = 'none';
   document.getElementById('gamePanel')!.style.display = '';
   document.getElementById('logPanel')!.style.display = '';
-  controls.enabled = true;
+}
 
-  // Fly-in animation
-  const startPos = camera.position.clone();
-  const endPos = new THREE.Vector3(18, 18, 14);
-  const dur = 2000, t0 = performance.now();
-  function flyIn() {
-    const t = Math.min((performance.now() - t0) / dur, 1);
-    const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-    camera.position.lerpVectors(startPos, endPos, ease);
-    controls.update();
-    if (t < 1) requestAnimationFrame(flyIn);
-    else { saveSnapshot(); beginTurn(); }
-  }
-  flyIn();
+function showMenu() {
+  cancelComputer();
+  setupEl.style.display = '';
+  resumeBtn.style.display = gameStarted && !game.done ? '' : 'none';
+}
+
+menuBtn.addEventListener('click', showMenu);
+
+resumeBtn.addEventListener('click', () => {
+  showGame();
+  beginTurn();
 });
 
 // ── Victory overlay ────────────────────────────────────────────────────
@@ -656,8 +741,8 @@ const victoryOverlay = document.getElementById('victoryOverlay')!;
 const victoryTitle = document.getElementById('victoryTitle')!;
 const victorySubtitle = document.getElementById('victorySubtitle')!;
 
-function showVictory(humanWon: boolean) {
-  victoryTitle.textContent = humanWon ? 'You Win!' : 'You Lose!';
+function showVictory(humanWon: boolean, title?: string) {
+  victoryTitle.textContent = title ?? (humanWon ? 'You Win!' : 'You Lose!');
   victoryTitle.className = humanWon ? 'win' : 'lose';
   victorySubtitle.textContent = humanWon ? 'Congratulations!' : 'Better luck next time';
   setTimeout(() => victoryOverlay.classList.add('show'), 600);

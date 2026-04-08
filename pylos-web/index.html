@@ -14,13 +14,21 @@
              justify-content: center; background: rgba(10,10,14,0.95); z-index: 100; }
     #setup h1 { font-size: 3rem; margin-bottom: 1rem; letter-spacing: 0.3em; }
     #setup .subtitle { color: #888; margin-bottom: 2rem; }
-    #setup .colors { display: flex; gap: 1rem; margin-bottom: 2rem; }
-    #setup .colors button { padding: 0.7rem 1.8rem; border: 2px solid #555; border-radius: 8px;
-                            background: #2a2a30; color: #eee; font-size: 1rem; cursor: pointer; }
-    #setup .colors button.selected { border-color: #8f8; background: #2a3a2a; }
+    #setup .player-config { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; }
+    #setup .side-pick { display: flex; align-items: center; gap: 1rem; }
+    #setup .side-label { width: 120px; text-align: right; color: #aaa; font-size: 0.95rem; }
+    #setup .toggle-group { display: flex; gap: 0; }
+    #setup .toggle-group button { padding: 0.5rem 1.4rem; border: 1px solid #555; background: #2a2a30;
+                                   color: #999; font-size: 0.9rem; cursor: pointer; }
+    #setup .toggle-group button:first-child { border-radius: 6px 0 0 6px; }
+    #setup .toggle-group button:last-child { border-radius: 0 6px 6px 0; border-left: none; }
+    #setup .toggle-group button.selected { border-color: #8f8; background: #2a3a2a; color: #cfc; }
     #setup #startBtn { padding: 0.8rem 3rem; border: none; border-radius: 8px;
                        background: #2a6a2a; color: #cfc; font-size: 1.2rem; cursor: pointer; }
     #setup #startBtn:hover { background: #3a8a3a; }
+    #setup #resumeBtn { padding: 0.8rem 3rem; border: 1px solid #555; border-radius: 8px;
+                        background: #2a2a30; color: #ccc; font-size: 1.2rem; cursor: pointer; margin-top: 0.8rem; }
+    #setup #resumeBtn:hover { background: #3a3a40; }
 
     /* HUD panels */
     .hud { position: fixed; background: rgba(12,12,16,0.88); border-radius: 8px; padding: 12px; font-size: 13px; z-index: 10; }
@@ -70,12 +78,25 @@
   <!-- Setup screen -->
   <div id="setup">
     <h1>PYLOS</h1>
-    <div class="subtitle">Choose your color</div>
-    <div class="colors">
-      <button id="pickLight" class="selected">Light (first)</button>
-      <button id="pickDark">Dark (second)</button>
+    <div class="subtitle">Assign players</div>
+    <div class="player-config">
+      <div class="side-pick">
+        <span class="side-label">Light (first)</span>
+        <div class="toggle-group" id="lightToggle">
+          <button class="selected" data-val="human">Human</button>
+          <button data-val="ai">AI</button>
+        </div>
+      </div>
+      <div class="side-pick">
+        <span class="side-label">Dark (second)</span>
+        <div class="toggle-group" id="darkToggle">
+          <button data-val="human">Human</button>
+          <button class="selected" data-val="ai">AI</button>
+        </div>
+      </div>
     </div>
     <button id="startBtn">START</button>
+    <button id="resumeBtn" style="display:none;">Resume Game</button>
   </div>
 
   <!-- HUD -->
@@ -84,7 +105,9 @@
     <div class="btns">
       <button id="undoBtn">Undo</button>
       <button id="redoBtn">Redo</button>
+      <button id="pauseBtn" style="display:none;">Pause</button>
       <button id="passBtn" style="display:none;">Pass take-back</button>
+      <button id="menuBtn">Menu</button>
     </div>
   </div>
 
