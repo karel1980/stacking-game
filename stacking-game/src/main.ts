@@ -736,6 +736,15 @@ resumeBtn.addEventListener('click', () => {
   beginTurn();
 });
 
+// ── Rules modal ────────────────────────────────────────────────────────
+const rulesOverlay = document.getElementById('rulesOverlay')!;
+const openRules = () => rulesOverlay.classList.add('show');
+const closeRules = () => rulesOverlay.classList.remove('show');
+document.getElementById('rulesBtn')!.addEventListener('click', openRules);
+document.getElementById('rulesBtn2')!.addEventListener('click', openRules);
+document.getElementById('rulesCloseBtn')!.addEventListener('click', closeRules);
+rulesOverlay.addEventListener('click', e => { if (e.target === rulesOverlay) closeRules(); });
+
 // ── Victory overlay ────────────────────────────────────────────────────
 const victoryOverlay = document.getElementById('victoryOverlay')!;
 const victoryTitle = document.getElementById('victoryTitle')!;

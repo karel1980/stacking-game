@@ -76,6 +76,25 @@
     #playAgainBtn { padding: 0.8rem 3rem; border: none; border-radius: 8px;
                     background: #2a6a2a; color: #cfc; font-size: 1.2rem; cursor: pointer; }
     #playAgainBtn:hover { background: #3a8a3a; }
+
+    /* Rules modal */
+    #rulesOverlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+                    z-index: 300; background: rgba(5,5,8,0.88); }
+    #rulesOverlay.show { display: flex; }
+    #rulesOverlay .rules-box { background: #1e1e24; border: 1px solid #444; border-radius: 12px;
+                                max-width: 560px; width: 90%; max-height: 80vh; overflow-y: auto;
+                                padding: 2rem; position: relative; }
+    #rulesOverlay .rules-box h2 { font-size: 1.6rem; margin-bottom: 1rem; color: #cfc; letter-spacing: 0.1em; }
+    #rulesOverlay .rules-box h3 { font-size: 1rem; color: #8f8; margin: 1.2rem 0 0.4rem; }
+    #rulesOverlay .rules-box p, #rulesOverlay .rules-box li { color: #bbb; font-size: 0.92rem; line-height: 1.6; }
+    #rulesOverlay .rules-box ul { padding-left: 1.2rem; margin-bottom: 0.6rem; }
+    #rulesOverlay .rules-box li { margin-bottom: 0.3rem; }
+    #rulesCloseBtn { position: absolute; top: 12px; right: 16px; background: none; border: none;
+                     color: #888; font-size: 1.4rem; cursor: pointer; }
+    #rulesCloseBtn:hover { color: #fff; }
+    .rules-btn { padding: 0.6rem 1.6rem; border: 1px solid #555; border-radius: 8px;
+                 background: #2a2a30; color: #ccc; font-size: 1rem; cursor: pointer; margin-top: 0.8rem; }
+    .rules-btn:hover { background: #3a3a40; }
   </style>
 </head>
 <body>
@@ -105,6 +124,7 @@
     </div>
     <button id="startBtn">START</button>
     <button id="resumeBtn" style="display:none;">Resume Game</button>
+    <button class="rules-btn" id="rulesBtn">Rules</button>
   </div>
 
   <!-- HUD -->
@@ -116,6 +136,7 @@
       <button id="pauseBtn" style="display:none;">Pause</button>
       <button id="passBtn" style="display:none;">Pass take-back</button>
       <button id="menuBtn">Menu</button>
+      <button id="rulesBtn2">Rules</button>
     </div>
   </div>
 
@@ -134,6 +155,43 @@
       <h2 id="victoryTitle"></h2>
       <p id="victorySubtitle"></p>
       <button id="playAgainBtn">Play Again</button>
+    </div>
+  </div>
+
+  <!-- Rules modal -->
+  <div id="rulesOverlay">
+    <div class="rules-box">
+      <button id="rulesCloseBtn">&times;</button>
+      <h2>Game Rules</h2>
+
+      <h3>Goal</h3>
+      <p>Save your balls! If it's your turn and you have no balls left, you lose.</p>
+
+      <h3>Setup</h3>
+      <p>Each player gets 15 balls. The board is a 4&times;4 grid where you build a pyramid together.</p>
+
+      <h3>Placing a Ball</h3>
+      <ul>
+        <li>On your turn, place one of your balls on any open spot.</li>
+        <li>You can place on a higher level once all four balls below it are filled.</li>
+      </ul>
+
+      <h3>Raising a Ball</h3>
+      <ul>
+        <li>Instead of placing a new ball, you can move one of your balls that's already on the board to a higher level.</li>
+        <li>You can only move a ball if nothing is on top of it.</li>
+        <li>This saves you a ball — very useful!</li>
+      </ul>
+
+      <h3>Completing a Square</h3>
+      <ul>
+        <li>If four of your balls form a 2&times;2 square, you may take back 1 or 2 of your balls from the board.</li>
+        <li>You can only take back balls with nothing on top of them.</li>
+        <li>This is optional — you can skip it.</li>
+      </ul>
+
+      <h3>Winning</h3>
+      <p>You win by placing the top ball of the pyramid, or if your opponent runs out of balls. Try to raise balls and complete squares to keep your supply up!</p>
     </div>
   </div>
 
